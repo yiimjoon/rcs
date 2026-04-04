@@ -4,11 +4,13 @@ import { motion } from 'framer-motion'
 import { useSceneStore } from '../../stores/sceneStore'
 import { SPRING_HEAVY } from '../../lib/constants'
 import { LockOpen, LockClosed, Copy, X } from '../../components/Icons'
+import { getRoleColor, getRoleLabel } from '../../lib/taxonomy'
 import type { Scene } from '../../lib/types'
 import { DurationStepper } from './DurationStepper'
 import { NarrationEditor } from './NarrationEditor'
 import { OnScreenChecklist } from './OnScreenChecklist'
 import { ReferencePanel } from './ReferencePanel'
+import { TaxonomyPanel } from './TaxonomyPanel'
 
 interface Props {
   scene: Scene
@@ -45,14 +47,24 @@ export function SceneColumn({ scene, index }: Props) {
       <div className="scene-header">
         <div className="scene-header__top">
           {/* Drag handle = scene number */}
-          <div
-            className="scene-number"
-            {...attributes}
-            {...listeners}
-            style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
-            title="드래그해서 순서 변경"
-          >
-            {index + 1}
+          <div className="scene-header__left">
+            <div
+              className="scene-number"
+              {...attributes}
+              {...listeners}
+              style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+              title="드래그해서 순서 변경"
+            >
+              {index + 1}
+            </div>
+            {scene.segmentRole && (
+              <span
+                className="scene-role-badge"
+                style={{ background: getRoleColor(scene.segmentRole) }}
+              >
+                {getRoleLabel(scene.segmentRole)}
+              </span>
+            )}
           </div>
           <div className="scene-header__actions">
             <button
@@ -95,6 +107,9 @@ export function SceneColumn({ scene, index }: Props) {
 
       {/* Narration */}
       <NarrationEditor scene={scene} />
+
+      {/* Taxonomy — role, hook type, retention devices */}
+      <TaxonomyPanel scene={scene} />
 
       {/* On-screen checklist */}
       <OnScreenChecklist scene={scene} />

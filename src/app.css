@@ -437,6 +437,25 @@ textarea:focus, input:focus {
   justify-content: space-between;
 }
 
+.scene-header__left {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.scene-role-badge {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: 3px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
 .scene-number {
   font-family: var(--font-display);
   font-size: 52px;
@@ -927,3 +946,86 @@ textarea:focus, input:focus {
   margin-top: 8px;
 }
 .empty-state__btn:hover { background: var(--accent-hover); }
+
+/* ─── Taxonomy Panel ────────────────────────────────────── */
+.taxonomy-panel {
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.taxonomy-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.taxonomy-label {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.taxonomy-role-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.role-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 3px;
+  border: 1.5px solid var(--border);
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+.role-pill:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.role-pill.active {
+  color: #fff;
+  border-color: transparent;
+}
+.role-pill--sub {
+  font-size: 10px;
+  padding: 2px 7px;
+}
+
+.taxonomy-devices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.device-chip {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+.device-chip:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.device-chip.active {
+  background: rgba(74, 158, 191, 0.15);
+  border-color: #4A9EBF;
+  color: #4A9EBF;
+}
