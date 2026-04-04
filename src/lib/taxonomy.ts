@@ -2,10 +2,8 @@ import type { SegmentRole, HookType, RetentionDevice } from './types'
 
 export const SEGMENT_ROLES: { value: SegmentRole; label: string; color: string }[] = [
   { value: 'hook',   label: '훅',    color: '#E85D2C' },
-  { value: 'setup',  label: '셋업',  color: '#6B7FD7' },
-  { value: 'retain', label: '리텐션',  color: '#4A9EBF' },
-  { value: 'proof',  label: '증명',  color: '#5BAD8F' },
-  { value: 'reward', label: '리워드', color: '#C96DD8' },
+  { value: 'retain', label: '리텐션', color: '#4A9EBF' },
+  { value: 'reward', label: '보상',   color: '#C96DD8' },
   { value: 'cta',    label: 'CTA',   color: '#E8A22C' },
   { value: 'bridge', label: '브리지', color: '#888880' },
 ]

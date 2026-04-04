@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Scene, OnScreenText, Reference } from '../lib/types'
+import type { Scene, OnScreenText, Reference, SegmentRole } from '../lib/types'
 import { generateId } from '../lib/id'
 
 interface SceneState {
@@ -56,15 +56,20 @@ export const useSceneStore = create<SceneState>()(
         }))
       },
 
-      // Migrate legacy scenes missing new fields (called once on app load)
+      // Migrate legacy scenes missing new fields or using removed roles
       migrateLegacyScenes: () => {
+        const roleRemap: Record<string, SegmentRole> = { setup: 'retain', proof: 'reward' }
         set(s => ({
-          scenes: s.scenes.map(sc => ({
-            ...sc,
-            segmentRole: sc.segmentRole ?? null,
-            hookType: sc.hookType ?? null,
-            retentionDevices: sc.retentionDevices ?? [],
-          })),
+          scenes: s.scenes.map(sc => {
+            const role = sc.segmentRole as string | null
+            const remapped = role ? (roleRemap[role] ?? role) : null
+            return {
+              ...sc,
+              segmentRole: remapped as SegmentRole | null,
+              hookType: sc.hookType ?? null,
+              retentionDevices: sc.retentionDevices ?? [],
+            }
+          }),
         }))
       },
 

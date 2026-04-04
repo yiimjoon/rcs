@@ -28,7 +28,7 @@ export interface AiVersion {
   createdAt: string
 }
 
-export type SegmentRole = 'hook' | 'setup' | 'retain' | 'proof' | 'reward' | 'cta' | 'bridge'
+export type SegmentRole = 'hook' | 'retain' | 'reward' | 'cta' | 'bridge'
 
 export type HookType =
   | 'problem_hook'
