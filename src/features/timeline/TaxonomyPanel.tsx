@@ -16,7 +16,7 @@ export function TaxonomyPanel({ scene }: Props) {
       segmentRole: role,
       hookType: role !== 'hook' ? null : scene.hookType,
     })
-    if (role === 'retain') setRetentionOpen(true)
+    if (role === 'retain' || role === 'retention') setRetentionOpen(true)
   }
 
   const setHookType = (hookType: HookType | null) => {
