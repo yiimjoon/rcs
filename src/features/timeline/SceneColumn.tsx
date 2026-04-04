@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { useSceneStore } from '../../stores/sceneStore'
 import { SPRING_HEAVY } from '../../lib/constants'
 import { LockOpen, LockClosed, Copy, X } from '../../components/Icons'
-import { getRoleColor, getRoleLabel } from '../../lib/taxonomy'
+import { getRoleColor, getRoleLabel, getDeviceLabel } from '../../lib/taxonomy'
 import type { Scene } from '../../lib/types'
 import { DurationStepper } from './DurationStepper'
 import { NarrationEditor } from './NarrationEditor'
@@ -57,14 +57,21 @@ export function SceneColumn({ scene, index }: Props) {
             >
               {index + 1}
             </div>
-            {scene.segmentRole && (
-              <span
-                className="scene-role-badge"
-                style={{ background: getRoleColor(scene.segmentRole) }}
-              >
-                {getRoleLabel(scene.segmentRole)}
-              </span>
-            )}
+            <div className="scene-header__badges">
+              {scene.segmentRole && (
+                <span
+                  className="scene-role-badge"
+                  style={{ background: getRoleColor(scene.segmentRole) }}
+                >
+                  {getRoleLabel(scene.segmentRole)}
+                </span>
+              )}
+              {scene.retentionDevices.map(d => (
+                <span key={d} className="scene-retention-badge">
+                  {getDeviceLabel(d)}
+                </span>
+              ))}
+            </div>
           </div>
           <div className="scene-header__actions">
             <button
