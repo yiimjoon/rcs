@@ -1062,6 +1062,33 @@ textarea:focus, input:focus {
   text-transform: uppercase;
 }
 
+.taxonomy-retention-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 2px 0;
+  cursor: pointer;
+  background: none;
+}
+.taxonomy-retention-toggle:hover .taxonomy-label { color: var(--text); }
+
+.taxonomy-retention-count {
+  font-size: 10px;
+  font-weight: 700;
+  background: #4A9EBF;
+  color: #fff;
+  border-radius: 8px;
+  padding: 0 5px;
+  line-height: 1.6;
+}
+
+.taxonomy-retention-arrow {
+  font-size: 8px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
 .taxonomy-role-pills {
   display: flex;
   flex-wrap: wrap;

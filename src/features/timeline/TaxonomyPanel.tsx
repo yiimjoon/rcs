@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useSceneStore } from '../../stores/sceneStore'
 import { SEGMENT_ROLES, HOOK_TYPES, RETENTION_DEVICES, getRoleColor } from '../../lib/taxonomy'
 import type { Scene, SegmentRole, HookType, RetentionDevice } from '../../lib/types'
@@ -8,6 +9,7 @@ interface Props {
 
 export function TaxonomyPanel({ scene }: Props) {
   const updateScene = useSceneStore(s => s.updateScene)
+  const [retentionOpen, setRetentionOpen] = useState(false)
 
   const setRole = (role: SegmentRole | null) => {
     updateScene(scene.id, {
@@ -21,16 +23,17 @@ export function TaxonomyPanel({ scene }: Props) {
   }
 
   const toggleDevice = (device: RetentionDevice) => {
-    const current = scene.retentionDevices
-    const next = current.includes(device)
-      ? current.filter(d => d !== device)
-      : [...current, device]
+    const next = scene.retentionDevices.includes(device)
+      ? scene.retentionDevices.filter(d => d !== device)
+      : [...scene.retentionDevices, device]
     updateScene(scene.id, { retentionDevices: next })
   }
 
+  const activeDeviceCount = scene.retentionDevices.length
+
   return (
     <div className="taxonomy-panel">
-      {/* Segment Role */}
+      {/* Segment Role — 항상 표시 */}
       <div className="taxonomy-section">
         <div className="taxonomy-label">SEGMENT ROLE</div>
         <div className="taxonomy-role-pills">
@@ -59,6 +62,7 @@ export function TaxonomyPanel({ scene }: Props) {
                 className={`role-pill role-pill--sub${scene.hookType === h.value ? ' active' : ''}`}
                 style={scene.hookType === h.value ? { background: getRoleColor('hook'), borderColor: getRoleColor('hook') } : {}}
                 onClick={() => setHookType(scene.hookType === h.value ? null : h.value)}
+                title={h.description}
               >
                 {h.label}
               </button>
@@ -67,24 +71,36 @@ export function TaxonomyPanel({ scene }: Props) {
         </div>
       )}
 
-      {/* Retention Devices */}
+      {/* Retention — 토글로 펼치기 */}
       <div className="taxonomy-section">
-        <div className="taxonomy-label">RETENTION</div>
-        <div className="taxonomy-devices">
-          {RETENTION_DEVICES.map(d => {
-            const active = scene.retentionDevices.includes(d.value)
-            return (
-              <button
-                key={d.value}
-                className={`device-chip${active ? ' active' : ''}`}
-                onClick={() => toggleDevice(d.value)}
-                title={d.description}
-              >
-                {d.label}
-              </button>
-            )
-          })}
-        </div>
+        <button
+          className="taxonomy-retention-toggle"
+          onClick={() => setRetentionOpen(o => !o)}
+        >
+          <span className="taxonomy-label" style={{ margin: 0 }}>RETENTION</span>
+          {activeDeviceCount > 0 && (
+            <span className="taxonomy-retention-count">{activeDeviceCount}</span>
+          )}
+          <span className="taxonomy-retention-arrow">{retentionOpen ? '▲' : '▼'}</span>
+        </button>
+
+        {retentionOpen && (
+          <div className="taxonomy-devices">
+            {RETENTION_DEVICES.map(d => {
+              const active = scene.retentionDevices.includes(d.value)
+              return (
+                <button
+                  key={d.value}
+                  className={`device-chip${active ? ' active' : ''}`}
+                  onClick={() => toggleDevice(d.value)}
+                  title={d.description}
+                >
+                  {d.label}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
