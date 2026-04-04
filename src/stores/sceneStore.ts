@@ -12,6 +12,7 @@ interface SceneState {
   deleteScenesByProject: (projectId: string) => void
   duplicateScene: (id: string) => void
   reorderScenes: (projectId: string, orderedIds: string[]) => void
+  migrateLegacyScenes: () => void
   // Lock
   toggleLock: (id: string) => void
   // OnScreen texts
@@ -34,7 +35,7 @@ export const useSceneStore = create<SceneState>()(
           id: generateId(),
           projectId,
           order: existing.length,
-          title: `Scene ${existing.length + 1}`,
+          title: `씬 ${existing.length + 1}`,
           narration: '',
           durationManual: 0,
           isLocked: false,
@@ -52,6 +53,18 @@ export const useSceneStore = create<SceneState>()(
       updateScene: (id, patch) => {
         set(s => ({
           scenes: s.scenes.map(sc => (sc.id === id ? { ...sc, ...patch } : sc)),
+        }))
+      },
+
+      // Migrate legacy scenes missing new fields (called once on app load)
+      migrateLegacyScenes: () => {
+        set(s => ({
+          scenes: s.scenes.map(sc => ({
+            ...sc,
+            segmentRole: sc.segmentRole ?? null,
+            hookType: sc.hookType ?? null,
+            retentionDevices: sc.retentionDevices ?? [],
+          })),
         }))
       },
 

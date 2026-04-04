@@ -91,11 +91,13 @@ export function SceneColumn({ scene, index }: Props) {
             <button
               className="scene-action-btn danger"
               onClick={() => {
+                if (scene.isLocked) return
                 if (confirm(`"${scene.title}" 씬을 삭제하시겠습니까?`)) {
                   deleteScene(scene.id)
                 }
               }}
-              title="씬 삭제"
+              title={scene.isLocked ? '잠금 해제 후 삭제 가능' : '씬 삭제'}
+              disabled={scene.isLocked}
             >
               <X size={14} />
             </button>

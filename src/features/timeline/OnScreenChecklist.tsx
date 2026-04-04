@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { useSceneStore } from '../../stores/sceneStore'
+import { X } from '../../components/Icons'
 import type { Scene } from '../../lib/types'
 
 interface Props { scene: Scene }
@@ -37,7 +38,7 @@ export function OnScreenChecklist({ scene }: Props) {
             className="checklist-delete"
             onClick={() => deleteOnScreenText(scene.id, item.id)}
             title="삭제"
-          >×</button>
+          ><X size={12} /></button>
         </div>
       ))}
 

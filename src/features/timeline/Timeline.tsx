@@ -19,6 +19,30 @@ import { useState } from 'react'
 import { useSceneStore } from '../../stores/sceneStore'
 import { useScenes } from '../../hooks/useScenes'
 import { SceneColumn } from './SceneColumn'
+import { getRoleColor, getRoleLabel } from '../../lib/taxonomy'
+import type { Scene } from '../../lib/types'
+
+function DragSnapshot({ scene, index }: { scene: Scene; index: number }) {
+  return (
+    <div className="scene-col drag-snapshot">
+      <div className="scene-header">
+        <div className="scene-header__top">
+          <div className="scene-header__left">
+            <div className="scene-number">{index + 1}</div>
+            <div className="scene-header__badges">
+              {scene.segmentRole && (
+                <span className="scene-role-badge" style={{ background: getRoleColor(scene.segmentRole) }}>
+                  {getRoleLabel(scene.segmentRole)}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="scene-title-input" style={{ pointerEvents: 'none' }}>{scene.title}</div>
+      </div>
+    </div>
+  )
+}
 
 interface Props {
   projectId: string
@@ -112,7 +136,7 @@ export function Timeline({ projectId }: Props) {
               animate={{ rotate: 2, scale: 1.03 }}
               style={{ opacity: 0.85, cursor: 'grabbing' }}
             >
-              <SceneColumn scene={activeScene} index={scenes.indexOf(activeScene)} />
+              <DragSnapshot scene={activeScene} index={scenes.indexOf(activeScene)} />
             </motion.div>
           )}
         </DragOverlay>

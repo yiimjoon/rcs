@@ -28,7 +28,7 @@ export function NarrationEditor({ scene }: Props) {
         onChange={e => updateScene(scene.id, { narration: e.target.value })}
         rows={4}
       />
-      <div className="narration-wordcount">{countWords(scene.narration)} words</div>
+      <div className="narration-wordcount">{countWords(scene.narration)} 단어</div>
     </div>
   )
 }

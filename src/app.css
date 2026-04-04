@@ -314,6 +314,42 @@ textarea:focus, input:focus {
 }
 .sidebar__new-btn:hover { background: var(--accent-hover); }
 
+.new-project-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.new-project-input__field {
+  flex: 1;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg-section);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.new-project-input__field:focus { border-color: var(--accent); }
+
+.new-project-input__ok {
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--accent);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+.new-project-input__ok:hover { background: var(--accent-hover); }
+.new-project-input__ok:disabled { opacity: 0.4; cursor: not-allowed; }
+
 .sidebar__list {
   flex: 1;
   padding: 12px 0;
@@ -506,6 +542,8 @@ textarea:focus, input:focus {
 .scene-action-btn:hover { background: var(--bg); color: var(--text); }
 .scene-action-btn.danger:hover { background: rgba(220,53,69,0.1); color: var(--danger); }
 .scene-action-btn.active { color: var(--accent); }
+.scene-action-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+.scene-action-btn:disabled:hover { background: transparent; color: var(--text-muted); }
 
 .scene-title-input {
   font-family: var(--font-display);
@@ -967,6 +1005,38 @@ textarea:focus, input:focus {
   margin-top: 8px;
 }
 .empty-state__btn:hover { background: var(--accent-hover); }
+.empty-state__btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.empty-state__btn--ghost {
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  transition: color 0.12s;
+}
+.empty-state__btn--ghost:hover { color: var(--text); }
+
+.empty-state__new {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.empty-state__input {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  min-width: 200px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.empty-state__input:focus { border-color: var(--accent); }
 
 /* ─── Taxonomy Panel ────────────────────────────────────── */
 .taxonomy-panel {

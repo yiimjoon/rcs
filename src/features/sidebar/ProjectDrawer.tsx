@@ -1,3 +1,4 @@
+import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useProjectStore } from '../../stores/projectStore'
 import { useUiStore } from '../../stores/uiStore'
@@ -5,9 +6,9 @@ import { X, Plus } from '../../components/Icons'
 import type { Project, ProjectStatus } from '../../lib/types'
 
 const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
-  { value: 'backlog', label: 'B' },
+  { value: 'backlog',     label: 'B' },
   { value: 'in_progress', label: 'W' },
-  { value: 'done', label: 'D' },
+  { value: 'done',        label: 'D' },
 ]
 
 function ProjectCard({ project }: { project: Project }) {
@@ -47,9 +48,47 @@ function ProjectCard({ project }: { project: Project }) {
   )
 }
 
+function NewProjectInput({ onDone }: { onDone: () => void }) {
+  const createProject = useProjectStore(s => s.createProject)
+  const [title, setTitle] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const confirm = () => {
+    const t = title.trim()
+    if (t) createProject(t)
+    onDone()
+  }
+
+  return (
+    <motion.div
+      className="new-project-input"
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 'auto' }}
+      exit={{ opacity: 0, height: 0 }}
+    >
+      <input
+        ref={inputRef}
+        autoFocus
+        className="new-project-input__field"
+        placeholder="프로젝트 이름"
+        value={title}
+        onChange={e => setTitle(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === 'Enter') confirm()
+          if (e.key === 'Escape') onDone()
+        }}
+      />
+      <button className="new-project-input__ok" onClick={confirm} disabled={!title.trim()}>
+        추가
+      </button>
+    </motion.div>
+  )
+}
+
 export function ProjectDrawer() {
-  const { projects, createProject } = useProjectStore()
+  const { projects } = useProjectStore()
   const { sidebarOpen, setSidebarOpen } = useUiStore()
+  const [adding, setAdding] = useState(false)
 
   return (
     <AnimatePresence>
@@ -73,12 +112,15 @@ export function ProjectDrawer() {
               <span className="sidebar__title">PROJECTS</span>
               <button
                 className="sidebar__new-btn"
-                onClick={() => {
-                  const title = prompt('프로젝트 이름을 입력하세요:', 'Untitled')
-                  if (title) createProject(title)
-                }}
+                onClick={() => setAdding(a => !a)}
               ><Plus size={14} /> 새 프로젝트</button>
             </div>
+
+            <AnimatePresence>
+              {adding && (
+                <NewProjectInput onDone={() => setAdding(false)} />
+              )}
+            </AnimatePresence>
 
             <div className="sidebar__list">
               {projects.length === 0 ? (
