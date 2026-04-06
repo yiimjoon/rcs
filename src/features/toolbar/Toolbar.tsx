@@ -1,14 +1,17 @@
+import { useState } from 'react'
 import { useProjectStore } from '../../stores/projectStore'
 import { useUiStore } from '../../stores/uiStore'
 import { useScenes } from '../../hooks/useScenes'
 import { calculateAutoDuration, formatDuration } from '../../lib/duration'
-import { Play, Settings, Share, Zap, Clock, Film } from '../../components/Icons'
+import { exportProjectToPdf } from '../../lib/exportProjectPdf'
+import { Play, Settings, Share, Zap, Clock, Film, Download } from '../../components/Icons'
 
 interface Props { projectId: string }
 
 export function Toolbar({ projectId }: Props) {
   const { projects, activeProjectId, updateProject } = useProjectStore()
   const { toggleSidebar, setMode } = useUiStore()
+  const [exportingPdf, setExportingPdf] = useState(false)
 
   const project = projects.find(p => p.id === activeProjectId)
   const scenes = useScenes(projectId)
@@ -18,6 +21,24 @@ export function Toolbar({ projectId }: Props) {
     (sum, s) => sum + calculateAutoDuration(s.narration) + s.durationManual,
     0
   )
+
+  const handleExportPdf = async () => {
+    if (!project || scenes.length === 0 || exportingPdf) return
+
+    setExportingPdf(true)
+
+    try {
+      await exportProjectToPdf(project, scenes)
+    } catch (error) {
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : 'PDF 저장 창을 여는 중 문제가 생겼습니다.'
+      )
+    } finally {
+      setExportingPdf(false)
+    }
+  }
 
   return (
     <div className="toolbar">
@@ -56,6 +77,19 @@ export function Toolbar({ projectId }: Props) {
       </div>
 
       <div className="toolbar__right">
+        {scenes.length > 0 && (
+          <button
+            className="toolbar__btn toolbar__btn--secondary"
+            onClick={() => {
+              void handleExportPdf()
+            }}
+            title="PDF 저장"
+            disabled={exportingPdf}
+          >
+            <Download size={14} />
+            {exportingPdf ? 'PDF 준비 중' : 'PDF 저장'}
+          </button>
+        )}
         {allLocked && (
           <button
             className="toolbar__btn toolbar__btn--accent"

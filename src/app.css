@@ -257,6 +257,20 @@ textarea:focus, input:focus {
 }
 .toolbar__btn--accent:hover { background: var(--accent-hover); }
 
+.toolbar__btn--secondary {
+  width: auto;
+  padding: 0 12px;
+  gap: 6px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--bg-section);
+  font-size: 12px;
+  font-weight: 600;
+}
+.toolbar__btn--secondary:hover { background: var(--bg); border-color: var(--border-strong); }
+.toolbar__btn--secondary:disabled { opacity: 0.55; cursor: wait; }
+.toolbar__btn--secondary:disabled:hover { background: var(--bg-section); color: var(--text); }
+
 /* ─── Sidebar ───────────────────────────────────────────── */
 .sidebar-overlay {
   position: fixed;
@@ -701,6 +715,31 @@ textarea:focus, input:focus {
   text-align: right;
 }
 
+.scene-notes-section {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scene-notes-textarea {
+  width: 100%;
+  background: none;
+  border: none;
+  resize: none;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  min-height: 68px;
+  overflow: hidden;
+}
+
+.scene-notes-helper {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 /* ─── On-Screen Checklist ───────────────────────────────── */
 .checklist-section {
   padding: 12px 16px;
@@ -773,6 +812,103 @@ textarea:focus, input:focus {
   gap: 8px;
 }
 
+.reference-dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 84px;
+  padding: 12px;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, rgba(232, 229, 224, 0.16), rgba(255, 255, 255, 0.9));
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.reference-dropzone:hover,
+.reference-dropzone.active {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, rgba(232, 93, 44, 0.08), rgba(255, 255, 255, 0.95));
+}
+
+.reference-dropzone__status {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.reference-board {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.reference-image-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  overflow: hidden;
+}
+
+.reference-image-card__img,
+.reference-image-card__placeholder {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 4px;
+  background: var(--bg-section);
+}
+
+.reference-image-card__img {
+  object-fit: cover;
+}
+
+.reference-image-card__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  border: 1px dashed var(--border-strong);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.reference-image-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.reference-image-card__sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reference-image-card__delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.reference-image-card:hover .reference-image-card__delete {
+  opacity: 1;
+}
+
 .reference-item {
   display: flex;
   align-items: flex-start;
@@ -792,6 +928,21 @@ textarea:focus, input:focus {
   background: var(--border);
 }
 
+.reference-thumb--button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 11px;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.reference-thumb--button:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .reference-info {
   flex: 1;
   min-width: 0;
@@ -807,11 +958,16 @@ textarea:focus, input:focus {
 }
 
 .reference-url {
+  display: block;
   font-size: 11px;
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.reference-url:hover {
+  color: var(--accent);
 }
 
 .reference-delete {
@@ -841,6 +997,11 @@ textarea:focus, input:focus {
   transition: border-color 0.15s;
 }
 .ref-input:focus { border-color: var(--accent); }
+
+.ref-error {
+  font-size: 11px;
+  color: var(--danger);
+}
 
 .ref-add-btn {
   background: var(--accent);
@@ -1053,6 +1214,10 @@ textarea:focus, input:focus {
   gap: 6px;
 }
 
+.taxonomy-section--nested {
+  margin-top: 4px;
+}
+
 .taxonomy-label {
   font-family: var(--font-body);
   font-size: 10px;
@@ -1072,6 +1237,7 @@ textarea:focus, input:focus {
   background: none;
 }
 .taxonomy-retention-toggle:hover .taxonomy-label { color: var(--text); }
+.taxonomy-retention-toggle.active .taxonomy-label { color: var(--text); }
 
 .taxonomy-retention-count {
   font-size: 10px;
@@ -1124,6 +1290,22 @@ textarea:focus, input:focus {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+.taxonomy-select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.taxonomy-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(232, 93, 44, 0.12);
 }
 
 .device-chip {

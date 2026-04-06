@@ -1,7 +1,6 @@
-import { useState } from 'react'
 import { useSceneStore } from '../../stores/sceneStore'
-import { SEGMENT_ROLES, HOOK_TYPES, RETENTION_DEVICES, getRoleColor } from '../../lib/taxonomy'
-import type { Scene, SegmentRole, HookType, RetentionDevice } from '../../lib/types'
+import { B_ROLL_SUBTYPES, SEGMENT_ROLES, HOOK_TYPES, RETENTION_DEVICES, getRoleColor } from '../../lib/taxonomy'
+import type { Scene, SegmentRole, HookType, RetentionDevice, BRollSubtype } from '../../lib/types'
 
 interface Props {
   scene: Scene
@@ -9,28 +8,63 @@ interface Props {
 
 export function TaxonomyPanel({ scene }: Props) {
   const updateScene = useSceneStore(s => s.updateScene)
-  const [retentionOpen, setRetentionOpen] = useState(false)
+  const segmentRoles = Array.isArray(scene.segmentRoles)
+    ? scene.segmentRoles
+    : []
+  const hookTypes = Array.isArray(scene.hookTypes)
+    ? scene.hookTypes
+    : []
+  const bRollSubtypes = Array.isArray(scene.bRollSubtypes)
+    ? scene.bRollSubtypes
+    : []
 
-  const setRole = (role: SegmentRole | null) => {
+  const toggleRole = (role: SegmentRole) => {
+    const next = segmentRoles.includes(role)
+      ? segmentRoles.filter(value => value !== role)
+      : [...segmentRoles, role]
+
     updateScene(scene.id, {
-      segmentRole: role,
-      hookType: role !== 'hook' ? null : scene.hookType,
+      segmentRoles: next,
+      hookTypes: next.includes('hook') ? hookTypes : [],
     })
-    if (role === 'retain' || role === 'retention') setRetentionOpen(true)
   }
 
-  const setHookType = (hookType: HookType | null) => {
-    updateScene(scene.id, { hookType })
+  const toggleHookType = (hookType: HookType) => {
+    const next = hookTypes.includes(hookType)
+      ? hookTypes.filter(value => value !== hookType)
+      : [...hookTypes, hookType]
+    updateScene(scene.id, { hookTypes: next })
   }
 
   const toggleDevice = (device: RetentionDevice) => {
     const next = scene.retentionDevices.includes(device)
       ? scene.retentionDevices.filter(d => d !== device)
       : [...scene.retentionDevices, device]
-    updateScene(scene.id, { retentionDevices: next })
+    updateScene(scene.id, {
+      retentionEnabled: true,
+      retentionDevices: next,
+      bRollSubtypes: next.includes('b_roll') ? bRollSubtypes : [],
+    })
+  }
+
+  const toggleBRollSubtype = (bRollSubtype: BRollSubtype) => {
+    const next = bRollSubtypes.includes(bRollSubtype)
+      ? bRollSubtypes.filter(value => value !== bRollSubtype)
+      : [...bRollSubtypes, bRollSubtype]
+    updateScene(scene.id, { bRollSubtypes: next })
+  }
+
+  const toggleRetention = () => {
+    const next = !scene.retentionEnabled
+    updateScene(scene.id, {
+      retentionEnabled: next,
+      retentionDevices: next ? scene.retentionDevices : [],
+      bRollSubtypes: next ? bRollSubtypes : [],
+    })
   }
 
   const activeDeviceCount = scene.retentionDevices.length
+  const hasBRoll = scene.retentionEnabled && scene.retentionDevices.includes('b_roll')
 
   return (
     <div className="taxonomy-panel">
@@ -41,9 +75,9 @@ export function TaxonomyPanel({ scene }: Props) {
           {SEGMENT_ROLES.map(r => (
             <button
               key={r.value}
-              className={`role-pill${scene.segmentRole === r.value ? ' active' : ''}`}
-              style={scene.segmentRole === r.value ? { background: r.color, borderColor: r.color } : { '--role-color': r.color } as React.CSSProperties}
-              onClick={() => setRole(scene.segmentRole === r.value ? null : r.value)}
+              className={`role-pill${segmentRoles.includes(r.value) ? ' active' : ''}`}
+              style={segmentRoles.includes(r.value) ? { background: r.color, borderColor: r.color } : { '--role-color': r.color } as React.CSSProperties}
+              onClick={() => toggleRole(r.value)}
               title={r.value}
             >
               {r.label}
@@ -53,16 +87,16 @@ export function TaxonomyPanel({ scene }: Props) {
       </div>
 
       {/* Hook Type — role=hook일 때만 */}
-      {scene.segmentRole === 'hook' && (
+      {segmentRoles.includes('hook') && (
         <div className="taxonomy-section">
           <div className="taxonomy-label">HOOK TYPE</div>
           <div className="taxonomy-role-pills">
             {HOOK_TYPES.map(h => (
               <button
                 key={h.value}
-                className={`role-pill role-pill--sub${scene.hookType === h.value ? ' active' : ''}`}
-                style={scene.hookType === h.value ? { background: getRoleColor('hook'), borderColor: getRoleColor('hook') } : {}}
-                onClick={() => setHookType(scene.hookType === h.value ? null : h.value)}
+                className={`role-pill role-pill--sub${hookTypes.includes(h.value) ? ' active' : ''}`}
+                style={hookTypes.includes(h.value) ? { background: getRoleColor('hook'), borderColor: getRoleColor('hook') } : {}}
+                onClick={() => toggleHookType(h.value)}
                 title={h.description}
               >
                 {h.label}
@@ -72,35 +106,53 @@ export function TaxonomyPanel({ scene }: Props) {
         </div>
       )}
 
-      {/* Retention — 토글로 펼치기 */}
       <div className="taxonomy-section">
         <button
-          className="taxonomy-retention-toggle"
-          onClick={() => setRetentionOpen(o => !o)}
+          className={`taxonomy-retention-toggle${scene.retentionEnabled ? ' active' : ''}`}
+          onClick={toggleRetention}
         >
           <span className="taxonomy-label" style={{ margin: 0 }}>RETENTION</span>
           {activeDeviceCount > 0 && (
             <span className="taxonomy-retention-count">{activeDeviceCount}</span>
           )}
-          <span className="taxonomy-retention-arrow">{retentionOpen ? '▲' : '▼'}</span>
         </button>
 
-        {retentionOpen && (
-          <div className="taxonomy-devices">
-            {RETENTION_DEVICES.map(d => {
-              const active = scene.retentionDevices.includes(d.value)
-              return (
-                <button
-                  key={d.value}
-                  className={`device-chip${active ? ' active' : ''}`}
-                  onClick={() => toggleDevice(d.value)}
-                  title={d.description}
-                >
-                  {d.label}
-                </button>
-              )
-            })}
-          </div>
+        {scene.retentionEnabled && (
+          <>
+            <div className="taxonomy-devices">
+              {RETENTION_DEVICES.map(d => {
+                const active = scene.retentionDevices.includes(d.value)
+                return (
+                  <button
+                    key={d.value}
+                    className={`device-chip${active ? ' active' : ''}`}
+                    onClick={() => toggleDevice(d.value)}
+                    title={d.description}
+                  >
+                    {d.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            {hasBRoll && (
+              <div className="taxonomy-section taxonomy-section--nested">
+                <div className="taxonomy-label">B-ROLL TYPE</div>
+                <div className="taxonomy-role-pills">
+                  {B_ROLL_SUBTYPES.map(subtype => (
+                    <button
+                      key={subtype.value}
+                      className={`role-pill role-pill--sub${bRollSubtypes.includes(subtype.value) ? ' active' : ''}`}
+                      style={bRollSubtypes.includes(subtype.value) ? { background: getRoleColor('retain'), borderColor: getRoleColor('retain') } : {}}
+                      onClick={() => toggleBRollSubtype(subtype.value)}
+                    >
+                      {subtype.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

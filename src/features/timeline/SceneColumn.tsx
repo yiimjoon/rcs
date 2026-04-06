@@ -1,6 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 import { useSceneStore } from '../../stores/sceneStore'
 import { SPRING_HEAVY } from '../../lib/constants'
 import { LockOpen, LockClosed, Copy, X } from '../../components/Icons'
@@ -8,6 +9,7 @@ import { getRoleColor, getRoleLabel, getDeviceLabel } from '../../lib/taxonomy'
 import type { Scene } from '../../lib/types'
 import { DurationStepper } from './DurationStepper'
 import { NarrationEditor } from './NarrationEditor'
+import { SceneNotesEditor } from './SceneNotesEditor'
 import { OnScreenChecklist } from './OnScreenChecklist'
 import { ReferencePanel } from './ReferencePanel'
 import { TaxonomyPanel } from './TaxonomyPanel'
@@ -19,6 +21,8 @@ interface Props {
 
 export function SceneColumn({ scene, index }: Props) {
   const { updateScene, deleteScene, duplicateScene, toggleLock } = useSceneStore()
+  const [titleDraft, setTitleDraft] = useState(scene.title)
+  const segmentRoles = Array.isArray(scene.segmentRoles) ? scene.segmentRoles : []
 
   const {
     attributes,
@@ -32,6 +36,15 @@ export function SceneColumn({ scene, index }: Props) {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+  }
+
+  useEffect(() => {
+    setTitleDraft(scene.title)
+  }, [scene.title])
+
+  const commitTitle = () => {
+    if (titleDraft === scene.title) return
+    updateScene(scene.id, { title: titleDraft })
   }
 
   return (
@@ -58,13 +71,17 @@ export function SceneColumn({ scene, index }: Props) {
               {index + 1}
             </div>
             <div className="scene-header__badges">
-              {scene.segmentRole && (
+              {segmentRoles.map(role => (
                 <span
+                  key={role}
                   className="scene-role-badge"
-                  style={{ background: getRoleColor(scene.segmentRole) }}
+                  style={{ background: getRoleColor(role) }}
                 >
-                  {getRoleLabel(scene.segmentRole)}
+                  {getRoleLabel(role)}
                 </span>
+              ))}
+              {scene.retentionEnabled && scene.retentionDevices.length === 0 && (
+                <span className="scene-retention-badge">리텐션</span>
               )}
               {scene.retentionDevices.map(d => (
                 <span key={d} className="scene-retention-badge">
@@ -105,9 +122,20 @@ export function SceneColumn({ scene, index }: Props) {
         </div>
         <input
           className="scene-title-input"
-          value={scene.title}
+          value={titleDraft}
           placeholder="SCENE TITLE"
-          onChange={e => updateScene(scene.id, { title: e.target.value })}
+          onChange={e => setTitleDraft(e.target.value)}
+          onBlur={commitTitle}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.currentTarget.blur()
+            }
+
+            if (e.key === 'Escape') {
+              setTitleDraft(scene.title)
+              e.currentTarget.blur()
+            }
+          }}
         />
       </div>
 
@@ -116,6 +144,9 @@ export function SceneColumn({ scene, index }: Props) {
 
       {/* Narration */}
       <NarrationEditor scene={scene} />
+
+      {/* Planning notes */}
+      <SceneNotesEditor scene={scene} />
 
       {/* Taxonomy — role, hook type, retention devices */}
       <TaxonomyPanel scene={scene} />

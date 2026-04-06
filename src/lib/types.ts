@@ -17,8 +17,11 @@ export interface OnScreenText {
 export interface Reference {
   id: string
   type: 'image' | 'link'
+  source: 'remote' | 'local'
   url: string
+  assetId: string | null
   caption: string
+  filename: string | null
 }
 
 export interface AiVersion {
@@ -28,9 +31,23 @@ export interface AiVersion {
   createdAt: string
 }
 
-export type SegmentRole = 'hook' | 'retain' | 'retention' | 'reward' | 'cta' | 'bridge'
+export type SegmentRole =
+  | 'hook'
+  | 'problem'
+  | 'desire'
+  | 'positioning'
+  | 'solution'
+  | 'benefit'
+  | 'closing_copy'
+  | 'proof'
+  | 'offer'
+  | 'retain'
+  | 'retention'
+  | 'reward'
+  | 'cta'
 
 export type HookType =
+  | 'callout_hook'
   | 'problem_hook'
   | 'number_hook'
   | 'twist_hook'
@@ -51,6 +68,7 @@ export type HookType =
   | 'warning_hook'
 
 export type RetentionDevice =
+  | 'b_roll'
   | 'open_loop'
   | 'infinite_loop'
   | 'gradual_reveal'
@@ -80,17 +98,41 @@ export type RetentionDevice =
   | 'level'
   | 'comparison'
 
+export type BRollSubtype =
+  | 'object_metaphor'
+  | 'action_metaphor'
+  | 'prop_roleplay'
+  | 'on_site_fieldwork'
+  | 'physical_data_proof'
+  | 'document_process_proof'
+  | 'behind_the_scenes'
+  | 'radical_vulnerability'
+  | 'nostalgic_archive'
+  | 'reflective_routine'
+  | 'screen_recording'
+  | 'ui_overlay'
+  | 'random_montage'
+  | 'spatial_transition'
+  | 'culinary_metaphor'
+  | 'lego_blocks'
+  | 'domino_metaphor'
+  | 'storyboard_sketch'
+  | 'software_ui'
+
 export interface Scene {
   id: string
   projectId: string
   order: number
   title: string
   narration: string
+  planningNotes: string
   durationManual: number   // seconds of manual padding
   isLocked: boolean
-  segmentRole: SegmentRole | null
-  hookType: HookType | null
+  segmentRoles: SegmentRole[]
+  hookTypes: HookType[]
+  retentionEnabled: boolean
   retentionDevices: RetentionDevice[]
+  bRollSubtypes: BRollSubtype[]
   onScreenTexts: OnScreenText[]
   references: Reference[]
   aiVersions: AiVersion[]

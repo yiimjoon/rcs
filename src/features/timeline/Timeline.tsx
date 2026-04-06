@@ -23,6 +23,8 @@ import { getRoleColor, getRoleLabel } from '../../lib/taxonomy'
 import type { Scene } from '../../lib/types'
 
 function DragSnapshot({ scene, index }: { scene: Scene; index: number }) {
+  const segmentRoles = Array.isArray(scene.segmentRoles) ? scene.segmentRoles : []
+
   return (
     <div className="scene-col drag-snapshot">
       <div className="scene-header">
@@ -30,11 +32,11 @@ function DragSnapshot({ scene, index }: { scene: Scene; index: number }) {
           <div className="scene-header__left">
             <div className="scene-number">{index + 1}</div>
             <div className="scene-header__badges">
-              {scene.segmentRole && (
-                <span className="scene-role-badge" style={{ background: getRoleColor(scene.segmentRole) }}>
-                  {getRoleLabel(scene.segmentRole)}
+              {segmentRoles.map(role => (
+                <span key={role} className="scene-role-badge" style={{ background: getRoleColor(role) }}>
+                  {getRoleLabel(role)}
                 </span>
-              )}
+              ))}
             </div>
           </div>
         </div>
@@ -73,11 +75,42 @@ export function Timeline({ projectId }: Props) {
     reorderScenes(projectId, newOrder)
   }
 
+  const canScrollVertically = (element: HTMLElement, deltaY: number) => {
+    if (element.scrollHeight <= element.clientHeight) return false
+    if (deltaY < 0) return element.scrollTop > 0
+    if (deltaY > 0) return element.scrollTop + element.clientHeight < element.scrollHeight
+    return false
+  }
+
+  const shouldAllowVerticalScroll = (target: EventTarget | null, deltaY: number) => {
+    const wrap = wrapRef.current
+    if (!wrap || !(target instanceof HTMLElement)) return false
+
+    let node: HTMLElement | null = target
+    while (node && node !== wrap) {
+      const style = window.getComputedStyle(node)
+      const overflowY = style.overflowY
+      const isScrollable = overflowY === 'auto' || overflowY === 'scroll'
+
+      if (isScrollable && canScrollVertically(node, deltaY)) {
+        return true
+      }
+
+      node = node.parentElement
+    }
+
+    return false
+  }
+
   // Horizontal scroll with mouse wheel (non-passive to allow preventDefault)
   useEffect(() => {
     const el = wrapRef.current
     if (!el) return
     const handler = (e: WheelEvent) => {
+      if (shouldAllowVerticalScroll(e.target, e.deltaY)) {
+        return
+      }
+
       e.preventDefault()
       el.scrollLeft += e.deltaY
     }

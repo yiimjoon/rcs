@@ -1,28 +1,48 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Project, ProjectStatus } from '../lib/types'
+import type { Project } from '../lib/types'
 import { generateId } from '../lib/id'
+import { backupPersistedValue } from '../lib/persistBackup'
+import {
+  sanitizePersistedProjectState,
+  sanitizeProjectPatch,
+  sanitizeProjectTitle,
+} from '../lib/sanitize'
 import { useSceneStore } from './sceneStore'
+
+const PROJECT_BACKUP_KEY = 'rcscript-projects-backup'
+const PROJECT_RAW_BACKUP_KEY = 'rcscript-projects-backup-raw'
 
 interface ProjectState {
   projects: Project[]
   activeProjectId: string | null
+  hasHydrated: boolean
   createProject: (title?: string) => Project
   updateProject: (id: string, patch: Partial<Pick<Project, 'title' | 'status'>>) => void
   deleteProject: (id: string) => void
   setActiveProject: (id: string) => void
+  setHasHydrated: (value: boolean) => void
 }
 
 export const useProjectStore = create<ProjectState>()(
   persist(
-    (set, get) => ({
-      projects: [],
-      activeProjectId: null,
+    (set, get) => {
+      const backupCurrentProjectState = () => {
+        backupPersistedValue(PROJECT_BACKUP_KEY, {
+          projects: get().projects,
+          activeProjectId: get().activeProjectId,
+        })
+      }
+
+      return {
+        projects: [],
+        activeProjectId: null,
+        hasHydrated: false,
 
       createProject: (title = 'Untitled') => {
         const project: Project = {
           id: generateId(),
-          title,
+          title: sanitizeProjectTitle(title),
           status: 'backlog',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -32,14 +52,16 @@ export const useProjectStore = create<ProjectState>()(
       },
 
       updateProject: (id, patch) => {
+        const safePatch = sanitizeProjectPatch(patch)
         set(s => ({
           projects: s.projects.map(p =>
-            p.id === id ? { ...p, ...patch, updatedAt: new Date().toISOString() } : p
+            p.id === id ? { ...p, ...safePatch, updatedAt: new Date().toISOString() } : p
           ),
         }))
       },
 
       deleteProject: (id) => {
+        backupCurrentProjectState()
         // Clean up orphan scenes
         useSceneStore.getState().deleteScenesByProject(id)
         set(s => {
@@ -52,9 +74,28 @@ export const useProjectStore = create<ProjectState>()(
         })
       },
 
-      setActiveProject: (id) => set({ activeProjectId: id }),
-    }),
-    { name: 'rcscript-projects' }
+        setActiveProject: (id) => set({ activeProjectId: id }),
+        setHasHydrated: (value) => set({ hasHydrated: value }),
+      }
+    },
+    {
+      name: 'rcscript-projects',
+      version: 2,
+      migrate: (persistedState) => {
+        backupPersistedValue(PROJECT_RAW_BACKUP_KEY, persistedState)
+        return sanitizePersistedProjectState(persistedState)
+      },
+      merge: (persistedState, currentState) => {
+        backupPersistedValue(PROJECT_RAW_BACKUP_KEY, persistedState)
+        return {
+          ...currentState,
+          ...sanitizePersistedProjectState(persistedState),
+        }
+      },
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      },
+    }
   )
 )
 

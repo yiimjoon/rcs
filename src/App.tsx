@@ -9,6 +9,7 @@ import { ProjectDrawer } from './features/sidebar/ProjectDrawer'
 import { FixedSidebar } from './features/sidebar/FixedSidebar'
 import { TeleprompterView } from './features/teleprompter/TeleprompterView'
 import { Film, Plus } from './components/Icons'
+import { SCRIPT_PRESETS, normalizePresetTitle } from './lib/scriptPresets'
 import './app.css'
 
 function EmptyState() {
@@ -80,15 +81,52 @@ function EmptyState() {
 }
 
 export default function App() {
-  const { projects, activeProjectId } = useProjectStore()
-  const { migrateLegacyScenes } = useSceneStore()
+  const {
+    projects,
+    activeProjectId,
+    hasHydrated: projectsHydrated,
+  } = useProjectStore()
+  const {
+    migrateLegacyScenes,
+    hasHydrated: scenesHydrated,
+    replaceScenesForProject,
+  } = useSceneStore()
   const { mode, setTeleprompterSceneIndex } = useUiStore()
   const activeProject = projects.find(p => p.id === activeProjectId) ?? null
 
   // #1: Migrate legacy localStorage data missing new taxonomy fields
   useEffect(() => {
+    if (!scenesHydrated) return
     migrateLegacyScenes()
-  }, [migrateLegacyScenes])
+  }, [scenesHydrated, migrateLegacyScenes])
+
+  useEffect(() => {
+    if (!projectsHydrated || !scenesHydrated) return
+
+    const importVersion = '2026-04-06-script-presets-v3'
+    if (localStorage.getItem(importVersion) === 'done') return
+
+    const projectStore = useProjectStore.getState()
+    const sceneStore = useSceneStore.getState()
+    const scenesByProjectId = new Map<string, number>()
+
+    for (const scene of sceneStore.scenes) {
+      scenesByProjectId.set(scene.projectId, (scenesByProjectId.get(scene.projectId) ?? 0) + 1)
+    }
+
+    for (const project of projectStore.projects) {
+      const preset = SCRIPT_PRESETS.find(
+        item => normalizePresetTitle(item.projectTitle) === normalizePresetTitle(project.title)
+      )
+      if (!preset) continue
+      if ((scenesByProjectId.get(project.id) ?? 0) > 0) continue
+
+      sceneStore.replaceScenesForProject(project.id, preset.scenes)
+      scenesByProjectId.set(project.id, preset.scenes.length)
+    }
+
+    localStorage.setItem(importVersion, 'done')
+  }, [projectsHydrated, scenesHydrated, replaceScenesForProject])
 
   // #2: Reset teleprompter index when active project changes
   const prevProjectId = useRef(activeProjectId)

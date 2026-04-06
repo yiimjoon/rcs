@@ -1,15 +1,22 @@
-import type { SegmentRole, HookType, RetentionDevice } from './types'
+import type { SegmentRole, HookType, RetentionDevice, BRollSubtype } from './types'
 
 export const SEGMENT_ROLES: { value: SegmentRole; label: string; color: string }[] = [
   { value: 'hook',      label: '훅',    color: '#E85D2C' },
+  { value: 'problem',   label: '문제', color: '#D1495B' },
+  { value: 'desire',    label: '욕구', color: '#E76F51' },
+  { value: 'positioning', label: '포지셔닝', color: '#3D5A80' },
+  { value: 'solution',  label: '솔루션', color: '#2A9D8F' },
+  { value: 'benefit',   label: '베네핏', color: '#5C7CFA' },
+  { value: 'closing_copy', label: '클로징 카피', color: '#355070' },
+  { value: 'proof',     label: '증거',   color: '#7B61FF' },
+  { value: 'offer',     label: '오퍼',   color: '#F4A261' },
   { value: 'retain',    label: '지속',  color: '#4A9EBF' },
-  { value: 'retention', label: '리텐션', color: '#2E86AB' },
   { value: 'reward',    label: '보상',   color: '#C96DD8' },
   { value: 'cta',       label: 'CTA',   color: '#E8A22C' },
-  { value: 'bridge',    label: '브리지', color: '#888880' },
 ]
 
 export const HOOK_TYPES: { value: HookType; label: string; description: string }[] = [
+  { value: 'callout_hook',      label: '콜아웃',      description: '특정 사람, 상황, 업종을 직접 불러 세워 시선을 잡기' },
   { value: 'problem_hook',      label: '문제 제기',   description: '문제/페인포인트를 먼저 던져서 멈추게 함' },
   { value: 'number_hook',       label: '숫자',        description: '구체적 숫자로 신뢰감+궁금증 동시 유발' },
   { value: 'twist_hook',        label: '반전',        description: '예상을 깨는 사실/결과로 시선 잡기' },
@@ -31,6 +38,7 @@ export const HOOK_TYPES: { value: HookType; label: string; description: string }
 ]
 
 export const RETENTION_DEVICES: { value: RetentionDevice; label: string; description: string }[] = [
+  { value: 'b_roll',              label: 'B롤',          description: '비유, 분위기, 증거 컷처럼 메인 화자를 보조하는 화면 장치' },
   { value: 'open_loop',           label: '오픈 루프',    description: '질문/상황을 던지고 답을 일부러 안 줘서 못 나가게 만듦' },
   { value: 'infinite_loop',       label: '무한 루프',    description: '마지막이 처음으로 돌아가서 다시 보게 만듦' },
   { value: 'gradual_reveal',      label: '점진적 공개',  description: '정보를 조금씩 풀어서 계속 궁금하게' },
@@ -61,6 +69,28 @@ export const RETENTION_DEVICES: { value: RetentionDevice; label: string; descrip
   { value: 'comparison',          label: '비교(vs)',     description: '두 대상을 나란히 놓아 판단 욕구 자극' },
 ]
 
+export const B_ROLL_SUBTYPES: { value: BRollSubtype; label: string }[] = [
+  { value: 'object_metaphor', label: 'object_metaphor' },
+  { value: 'action_metaphor', label: 'action_metaphor' },
+  { value: 'prop_roleplay', label: 'prop_roleplay' },
+  { value: 'on_site_fieldwork', label: 'on_site_fieldwork' },
+  { value: 'physical_data_proof', label: 'physical_data_proof' },
+  { value: 'document_process_proof', label: 'document_process_proof' },
+  { value: 'behind_the_scenes', label: 'behind_the_scenes' },
+  { value: 'radical_vulnerability', label: 'radical_vulnerability' },
+  { value: 'nostalgic_archive', label: 'nostalgic_archive' },
+  { value: 'reflective_routine', label: 'reflective_routine' },
+  { value: 'screen_recording', label: 'screen_recording' },
+  { value: 'ui_overlay', label: 'ui_overlay' },
+  { value: 'random_montage', label: 'random_montage' },
+  { value: 'spatial_transition', label: 'spatial_transition' },
+  { value: 'culinary_metaphor', label: 'culinary_metaphor' },
+  { value: 'lego_blocks', label: 'lego_blocks' },
+  { value: 'domino_metaphor', label: 'domino_metaphor' },
+  { value: 'storyboard_sketch', label: 'storyboard_sketch' },
+  { value: 'software_ui', label: 'software_ui' },
+]
+
 export function getRoleColor(role: SegmentRole | null): string {
   return SEGMENT_ROLES.find(r => r.value === role)?.color ?? '#888880'
 }
@@ -69,6 +99,14 @@ export function getRoleLabel(role: SegmentRole | null): string {
   return SEGMENT_ROLES.find(r => r.value === role)?.label ?? '—'
 }
 
+export function getHookTypeLabel(type: HookType | null): string {
+  return HOOK_TYPES.find(item => item.value === type)?.label ?? '—'
+}
+
 export function getDeviceLabel(device: RetentionDevice): string {
   return RETENTION_DEVICES.find(d => d.value === device)?.label ?? device
+}
+
+export function getBRollSubtypeLabel(subtype: BRollSubtype | null): string {
+  return B_ROLL_SUBTYPES.find(item => item.value === subtype)?.label ?? '—'
 }
