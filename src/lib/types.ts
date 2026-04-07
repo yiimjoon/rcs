@@ -3,6 +3,7 @@ export type ProjectStatus = 'backlog' | 'in_progress' | 'done'
 export interface Project {
   id: string
   title: string
+  theme: string
   status: ProjectStatus
   createdAt: string
   updatedAt: string
@@ -34,6 +35,7 @@ export interface AiVersion {
 export type SegmentRole =
   | 'hook'
   | 'problem'
+  | 'answer'
   | 'desire'
   | 'positioning'
   | 'solution'
@@ -119,6 +121,24 @@ export type BRollSubtype =
   | 'storyboard_sketch'
   | 'software_ui'
 
+export type CinematographyTag =
+  | 'extreme_wide'
+  | 'wide_shot'
+  | 'full_shot'
+  | 'knee_shot'
+  | 'waist_shot'
+  | 'chest_shot'
+  | 'close_up'
+  | 'extreme_close_up'
+  | 'insert_cut'
+  | 'three_quarter_angle'
+  | 'profile_angle'
+  | 'eye_level'
+  | 'high_angle'
+  | 'overhead'
+  | 'low_angle'
+  | 'over_shoulder'
+
 export interface Scene {
   id: string
   projectId: string
@@ -126,6 +146,11 @@ export interface Scene {
   title: string
   narration: string
   planningNotes: string
+  location: string
+  gesture: string
+  blocking: string
+  cameraMovement: string
+  propsNotes: string
   durationManual: number   // seconds of manual padding
   isLocked: boolean
   segmentRoles: SegmentRole[]
@@ -133,6 +158,7 @@ export interface Scene {
   retentionEnabled: boolean
   retentionDevices: RetentionDevice[]
   bRollSubtypes: BRollSubtype[]
+  cinematographyTags: CinematographyTag[]
   onScreenTexts: OnScreenText[]
   references: Reference[]
   aiVersions: AiVersion[]

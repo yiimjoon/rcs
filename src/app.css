@@ -271,6 +271,41 @@ textarea:focus, input:focus {
 .toolbar__btn--secondary:disabled { opacity: 0.55; cursor: wait; }
 .toolbar__btn--secondary:disabled:hover { background: var(--bg-section); color: var(--text); }
 
+.project-brief {
+  padding: 12px 20px 12px calc(var(--fixed-sidebar-width) + 20px);
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #fff8f1, #fffdf9);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.project-brief__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.project-brief__textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  resize: none;
+  overflow: hidden;
+  min-height: 44px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+.project-brief__helper {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 /* ─── Sidebar ───────────────────────────────────────────── */
 .sidebar-overlay {
   position: fixed;
@@ -740,6 +775,56 @@ textarea:focus, input:focus {
   color: var(--text-muted);
 }
 
+.direction-board-section {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: linear-gradient(180deg, rgba(248, 247, 245, 0.65), rgba(255, 255, 255, 0.95));
+}
+
+.direction-board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.direction-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.82);
+  min-width: 0;
+}
+
+.direction-card__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.direction-card__textarea {
+  width: 100%;
+  background: none;
+  border: none;
+  resize: none;
+  overflow: hidden;
+  min-height: 42px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.direction-board__helper {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 /* ─── On-Screen Checklist ───────────────────────────────── */
 .checklist-section {
   padding: 12px 16px;
@@ -806,18 +891,52 @@ textarea:focus, input:focus {
 
 /* ─── References ────────────────────────────────────────── */
 .reference-section {
-  padding: 12px 16px;
+  padding: 14px 16px 16px;
+  border-bottom: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 8px;
+  background: linear-gradient(180deg, rgba(248, 247, 245, 0.9), rgba(255, 255, 255, 0.98));
+}
+
+.reference-section__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  background: none;
+  color: var(--text);
+}
+
+.reference-section__toggle .section-label {
+  margin: 0;
+}
+
+.reference-section__meta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.reference-section__arrow {
+  margin-left: auto;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+.reference-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .reference-dropzone {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 84px;
-  padding: 12px;
+  min-height: 128px;
+  padding: 14px;
   border: 1.5px dashed var(--border-strong);
   border-radius: var(--radius-sm);
   background: linear-gradient(180deg, rgba(232, 229, 224, 0.16), rgba(255, 255, 255, 0.9));
@@ -839,7 +958,7 @@ textarea:focus, input:focus {
 .reference-board {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 10px;
+  gap: 12px;
 }
 
 .reference-image-card {
@@ -847,26 +966,30 @@ textarea:focus, input:focus {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: var(--bg);
+  background: rgba(255, 255, 255, 0.96);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 8px;
+  padding: 10px;
   overflow: hidden;
 }
 
 .reference-image-card__img,
 .reference-image-card__placeholder {
   width: 100%;
-  aspect-ratio: 4 / 3;
   border-radius: 4px;
   background: var(--bg-section);
 }
 
 .reference-image-card__img {
-  object-fit: cover;
+  display: block;
+  height: auto;
+  max-height: 360px;
+  object-fit: contain;
+  background: rgba(248, 247, 245, 0.95);
 }
 
 .reference-image-card__placeholder {
+  min-height: 180px;
   display: flex;
   align-items: center;
   justify-content: center;

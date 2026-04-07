@@ -18,7 +18,7 @@ interface ProjectState {
   activeProjectId: string | null
   hasHydrated: boolean
   createProject: (title?: string) => Project
-  updateProject: (id: string, patch: Partial<Pick<Project, 'title' | 'status'>>) => void
+  updateProject: (id: string, patch: Partial<Pick<Project, 'title' | 'theme' | 'status'>>) => void
   deleteProject: (id: string) => void
   setActiveProject: (id: string) => void
   setHasHydrated: (value: boolean) => void
@@ -43,6 +43,7 @@ export const useProjectStore = create<ProjectState>()(
         const project: Project = {
           id: generateId(),
           title: sanitizeProjectTitle(title),
+          theme: '',
           status: 'backlog',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),

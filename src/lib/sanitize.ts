@@ -1,6 +1,7 @@
 import type {
   AiVersion,
   BRollSubtype,
+  CinematographyTag,
   HookType,
   OnScreenText,
   Project,
@@ -15,6 +16,7 @@ const PROJECT_STATUSES = ['backlog', 'in_progress', 'done'] as const
 const SEGMENT_ROLES = [
   'hook',
   'problem',
+  'answer',
   'desire',
   'positioning',
   'solution',
@@ -101,13 +103,33 @@ const B_ROLL_SUBTYPES = [
   'storyboard_sketch',
   'software_ui',
 ] as const
+const CINEMATOGRAPHY_TAGS = [
+  'extreme_wide',
+  'wide_shot',
+  'full_shot',
+  'knee_shot',
+  'waist_shot',
+  'chest_shot',
+  'close_up',
+  'extreme_close_up',
+  'insert_cut',
+  'three_quarter_angle',
+  'profile_angle',
+  'eye_level',
+  'high_angle',
+  'overhead',
+  'low_angle',
+  'over_shoulder',
+] as const
 
 const SAFE_PROTOCOLS = new Set(['http:', 'https:'])
 const MAX_ID_LENGTH = 120
 const MAX_PROJECT_TITLE_LENGTH = 120
+const MAX_PROJECT_THEME_LENGTH = 2000
 const MAX_SCENE_TITLE_LENGTH = 120
 const MAX_NARRATION_LENGTH = 20000
 const MAX_PLANNING_NOTES_LENGTH = 8000
+const MAX_DIRECTION_FIELD_LENGTH = 800
 const MAX_TEXT_LENGTH = 200
 const MAX_CAPTION_LENGTH = 200
 const MAX_FILENAME_LENGTH = 200
@@ -120,6 +142,7 @@ const MAX_RETENTION_DEVICE_COUNT = 8
 const MAX_HOOK_TYPE_COUNT = 8
 const MAX_SEGMENT_ROLE_COUNT = 8
 const MAX_B_ROLL_SUBTYPE_COUNT = 8
+const MAX_CINEMATOGRAPHY_TAG_COUNT = 10
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
@@ -169,6 +192,10 @@ export function sanitizeProjectTitle(value: unknown) {
   return sanitizeSingleLine(value, MAX_PROJECT_TITLE_LENGTH) || 'Untitled'
 }
 
+export function sanitizeProjectTheme(value: unknown) {
+  return sanitizeMultiline(value, MAX_PROJECT_THEME_LENGTH)
+}
+
 export function sanitizeSceneTitle(value: unknown) {
   return sanitizeSingleLine(value, MAX_SCENE_TITLE_LENGTH) || 'Untitled Scene'
 }
@@ -179,6 +206,10 @@ export function sanitizeNarration(value: unknown) {
 
 export function sanitizePlanningNotes(value: unknown) {
   return sanitizeMultiline(value, MAX_PLANNING_NOTES_LENGTH)
+}
+
+export function sanitizeDirectionField(value: unknown) {
+  return sanitizeMultiline(value, MAX_DIRECTION_FIELD_LENGTH)
 }
 
 export function sanitizeChecklistText(value: unknown) {
@@ -288,6 +319,22 @@ function sanitizeBRollSubtypes(
   return legacyBRollSubtype ? [legacyBRollSubtype as BRollSubtype] : []
 }
 
+function sanitizeCinematographyTags(
+  cinematographyTagsValue: unknown,
+  cinematographyTagValue?: unknown
+): CinematographyTag[] {
+  if (Array.isArray(cinematographyTagsValue)) {
+    return dedupe(
+      cinematographyTagsValue
+        .map(value => asEnumValue(value, CINEMATOGRAPHY_TAGS))
+        .filter((value): value is CinematographyTag => value !== null)
+    ).slice(0, MAX_CINEMATOGRAPHY_TAG_COUNT)
+  }
+
+  const legacyCinematographyTag = asEnumValue(cinematographyTagValue, CINEMATOGRAPHY_TAGS)
+  return legacyCinematographyTag ? [legacyCinematographyTag as CinematographyTag] : []
+}
+
 function sanitizeSegmentRoles(
   segmentRolesValue: unknown,
   segmentRoleValue?: unknown
@@ -374,6 +421,7 @@ function sanitizeProject(value: unknown): Project | null {
   return {
     id,
     title: sanitizeProjectTitle(record.title),
+    theme: sanitizeProjectTheme(record.theme),
     status: asEnumValue(record.status, PROJECT_STATUSES) ?? 'backlog',
     createdAt: sanitizeIsoDate(record.createdAt),
     updatedAt: sanitizeIsoDate(record.updatedAt),
@@ -423,6 +471,10 @@ function sanitizeScene(value: unknown): Scene | null {
     : []
   const hookTypes = sanitizeHookTypes(record.hookTypes, record.hookType)
   const segmentRoles = sanitizeSegmentRoles(record.segmentRoles, record.segmentRole)
+  const cinematographyTags = sanitizeCinematographyTags(
+    record.cinematographyTags,
+    record.cinematographyTag
+  )
   const retentionEnabled =
     sanitizeRetentionEnabled(record.retentionEnabled) ||
     legacySegmentRole === 'retention' ||
@@ -435,6 +487,11 @@ function sanitizeScene(value: unknown): Scene | null {
     title: sanitizeSceneTitle(record.title),
     narration: sanitizeNarration(record.narration),
     planningNotes: sanitizePlanningNotes(record.planningNotes),
+    location: sanitizeDirectionField(record.location),
+    gesture: sanitizeDirectionField(record.gesture),
+    blocking: sanitizeDirectionField(record.blocking),
+    cameraMovement: sanitizeDirectionField(record.cameraMovement),
+    propsNotes: sanitizeDirectionField(record.propsNotes),
     durationManual: sanitizeDurationManual(record.durationManual),
     isLocked: Boolean(record.isLocked),
     segmentRoles,
@@ -442,6 +499,7 @@ function sanitizeScene(value: unknown): Scene | null {
     retentionEnabled,
     retentionDevices: retentionEnabled ? retentionDevices : [],
     bRollSubtypes: retentionEnabled && hasBRoll ? bRollSubtypes : [],
+    cinematographyTags,
     onScreenTexts,
     references,
     aiVersions,
@@ -449,12 +507,16 @@ function sanitizeScene(value: unknown): Scene | null {
 }
 
 export function sanitizeProjectPatch(
-  patch: Partial<Pick<Project, 'title' | 'status'>>
-): Partial<Pick<Project, 'title' | 'status'>> {
-  const sanitizedPatch: Partial<Pick<Project, 'title' | 'status'>> = {}
+  patch: Partial<Pick<Project, 'title' | 'theme' | 'status'>>
+): Partial<Pick<Project, 'title' | 'theme' | 'status'>> {
+  const sanitizedPatch: Partial<Pick<Project, 'title' | 'theme' | 'status'>> = {}
 
   if ('title' in patch) {
     sanitizedPatch.title = sanitizeProjectTitle(patch.title)
+  }
+
+  if ('theme' in patch) {
+    sanitizedPatch.theme = sanitizeProjectTheme(patch.theme)
   }
 
   if ('status' in patch) {
@@ -495,6 +557,15 @@ export function sanitizeScenePatch(
   if ('narration' in patch) sanitizedPatch.narration = sanitizeNarration(patch.narration)
   if ('planningNotes' in patch) {
     sanitizedPatch.planningNotes = sanitizePlanningNotes(patch.planningNotes)
+  }
+  if ('location' in patch) sanitizedPatch.location = sanitizeDirectionField(patch.location)
+  if ('gesture' in patch) sanitizedPatch.gesture = sanitizeDirectionField(patch.gesture)
+  if ('blocking' in patch) sanitizedPatch.blocking = sanitizeDirectionField(patch.blocking)
+  if ('cameraMovement' in patch) {
+    sanitizedPatch.cameraMovement = sanitizeDirectionField(patch.cameraMovement)
+  }
+  if ('propsNotes' in patch) {
+    sanitizedPatch.propsNotes = sanitizeDirectionField(patch.propsNotes)
   }
   if ('durationManual' in patch) {
     sanitizedPatch.durationManual = sanitizeDurationManual(patch.durationManual)
@@ -549,6 +620,10 @@ export function sanitizeScenePatch(
 
   if ('bRollSubtype' in patch) {
     sanitizedPatch.bRollSubtypes = sanitizeBRollSubtypes(undefined, patch.bRollSubtype)
+  }
+
+  if ('cinematographyTags' in patch) {
+    sanitizedPatch.cinematographyTags = sanitizeCinematographyTags(patch.cinematographyTags)
   }
 
   if ('onScreenTexts' in patch) {

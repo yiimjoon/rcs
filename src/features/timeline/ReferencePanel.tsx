@@ -11,6 +11,8 @@ import { useSceneStore } from '../../stores/sceneStore'
 
 interface Props { scene: Scene }
 
+let activePasteSceneId: string | null = null
+
 function getReferenceMeta(reference: Reference) {
   if (reference.source === 'local') {
     return reference.filename ?? '로컬 이미지'
@@ -102,6 +104,7 @@ function ImageReferenceCard({ sceneId, reference }: { sceneId: string; reference
           className="reference-image-card__img"
           loading="lazy"
           decoding="async"
+          crossOrigin={reference.source === 'remote' ? 'anonymous' : undefined}
           referrerPolicy={reference.source === 'remote' ? 'no-referrer' : undefined}
           onError={() => setPreviewFailed(true)}
         />
@@ -170,13 +173,15 @@ export function ReferencePanel({ scene }: Props) {
   const addReference = useSceneStore(s => s.addReference)
   const addLocalReference = useSceneStore(s => s.addLocalReference)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [expanded, setExpanded] = useState(true)
   const [url, setUrl] = useState('')
   const [caption, setCaption] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [error, setError] = useState('')
   const [dragActive, setDragActive] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [pasteEnabled, setPasteEnabled] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
+  const [isFocusedWithin, setIsFocusedWithin] = useState(false)
 
   const imageReferences = useMemo(
     () => scene.references.filter(reference => reference.type === 'image'),
@@ -186,6 +191,17 @@ export function ReferencePanel({ scene }: Props) {
     () => scene.references.filter(reference => reference.type === 'link'),
     [scene.references]
   )
+  const pasteEnabled = expanded && (isHovered || isFocusedWithin)
+
+  const claimPasteTarget = () => {
+    activePasteSceneId = scene.id
+  }
+
+  const releasePasteTarget = (nextHovered: boolean, nextFocusedWithin: boolean) => {
+    if (!nextHovered && !nextFocusedWithin && activePasteSceneId === scene.id) {
+      activePasteSceneId = null
+    }
+  }
 
   const addUrlReference = (rawUrl: string, nextCaption = '') => {
     const trimmedUrl = rawUrl.trim()
@@ -263,13 +279,26 @@ export function ReferencePanel({ scene }: Props) {
       return Boolean(target.closest('input, textarea, select, [contenteditable="true"]'))
     }
 
+    const getClipboardImageFiles = (clipboard: DataTransfer | null) => {
+      if (!clipboard) return []
+
+      const fileList = Array.from(clipboard.files).filter(file => file.type.startsWith('image/'))
+      if (fileList.length > 0) return fileList
+
+      return Array.from(clipboard.items)
+        .filter(item => item.kind === 'file' && item.type.startsWith('image/'))
+        .map(item => item.getAsFile())
+        .filter((file): file is File => file !== null)
+    }
+
     const handlePaste = (event: ClipboardEvent) => {
+      if (activePasteSceneId !== scene.id) return
       if (isEditableTarget(event.target)) return
 
       const clipboard = event.clipboardData
       if (!clipboard) return
 
-      const imageFiles = Array.from(clipboard.files).filter(file => file.type.startsWith('image/'))
+      const imageFiles = getClipboardImageFiles(clipboard)
       if (imageFiles.length > 0) {
         event.preventDefault()
         void handleFiles(imageFiles)
@@ -292,119 +321,155 @@ export function ReferencePanel({ scene }: Props) {
     return () => window.removeEventListener('paste', handlePaste)
   }, [pasteEnabled, scene.id])
 
+  useEffect(() => {
+    if (scene.references.length > 0 || showForm || uploading) {
+      setExpanded(true)
+    }
+  }, [scene.references.length, showForm, uploading])
+
+  useEffect(() => {
+    return () => {
+      if (activePasteSceneId === scene.id) {
+        activePasteSceneId = null
+      }
+    }
+  }, [scene.id])
+
   return (
-    <div
-      className="reference-section"
-      onMouseEnter={() => setPasteEnabled(true)}
-      onMouseLeave={() => setPasteEnabled(false)}
-      onFocusCapture={() => setPasteEnabled(true)}
-      onBlurCapture={event => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-          setPasteEnabled(false)
-        }
-      }}
-    >
-      <div className="section-label">References</div>
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        hidden
-        onChange={e => {
-          if (e.target.files?.length) void handleFiles(e.target.files)
-        }}
-      />
-
+    <div className="reference-section">
       <button
         type="button"
-        className={`reference-dropzone${dragActive ? ' active' : ''}`}
-        aria-label="이미지 레퍼런스 붙이기"
-        onClick={() => fileInputRef.current?.click()}
-        onDragEnter={e => {
-          e.preventDefault()
-          setDragActive(true)
-        }}
-        onDragOver={e => {
-          e.preventDefault()
-          setDragActive(true)
-        }}
-        onDragLeave={e => {
-          e.preventDefault()
-          if (e.currentTarget === e.target) setDragActive(false)
-        }}
-        onDrop={e => {
-          e.preventDefault()
-          setDragActive(false)
-          if (e.dataTransfer.files?.length) void handleFiles(e.dataTransfer.files)
-        }}
+        className={`reference-section__toggle${expanded ? ' active' : ''}`}
+        onClick={() => setExpanded(value => !value)}
       >
-        {uploading && <div className="reference-dropzone__status">이미지 붙이는 중...</div>}
+        <span className="section-label">References</span>
+        <span className="reference-section__meta">{scene.references.length} items</span>
+        <span className="reference-section__arrow">{expanded ? '−' : '+'}</span>
       </button>
 
-      {imageReferences.length > 0 && (
-        <div className="reference-board">
-          {imageReferences.map(reference => (
-            <ImageReferenceCard key={reference.id} sceneId={scene.id} reference={reference} />
-          ))}
-        </div>
-      )}
-
-      {linkReferences.map(reference => (
-        <LinkReferenceItem key={reference.id} sceneId={scene.id} reference={reference} />
-      ))}
-
-      {showForm ? (
-        <div className="reference-add-form">
+      {expanded && (
+        <div
+          className="reference-section__body"
+          onMouseEnter={() => {
+            setIsHovered(true)
+            claimPasteTarget()
+          }}
+          onMouseLeave={() => {
+            setIsHovered(false)
+            releasePasteTarget(false, isFocusedWithin)
+          }}
+          onFocusCapture={() => {
+            setIsFocusedWithin(true)
+            claimPasteTarget()
+          }}
+          onBlurCapture={event => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+              setIsFocusedWithin(false)
+              releasePasteTarget(isHovered, false)
+            }
+          }}
+        >
           <input
-            className="ref-input"
-            placeholder="URL (이미지 또는 링크)"
-            value={url}
-            maxLength={2048}
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
             onChange={e => {
-              setUrl(e.target.value)
-              setError('')
+              if (e.target.files?.length) void handleFiles(e.target.files)
             }}
-            onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
           />
-          <input
-            className="ref-input"
-            placeholder="설명 (선택)"
-            value={caption}
-            maxLength={200}
-            onChange={e => setCaption(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
-          />
-          {error && <div className="ref-error">{error}</div>}
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button type="button" className="ref-add-btn" onClick={handleAdd}>링크 추가</button>
+
+          {showForm ? (
+            <div className="reference-add-form">
+              <input
+                className="ref-input"
+                placeholder="URL (이미지 또는 링크)"
+                value={url}
+                maxLength={2048}
+                onChange={e => {
+                  setUrl(e.target.value)
+                  setError('')
+                }}
+                onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
+              />
+              <input
+                className="ref-input"
+                placeholder="설명 (선택)"
+                value={caption}
+                maxLength={200}
+                onChange={e => setCaption(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
+              />
+              {error && <div className="ref-error">{error}</div>}
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button type="button" className="ref-add-btn" onClick={handleAdd}>링크 추가</button>
+                <button
+                  type="button"
+                  style={{ fontSize: 12, color: 'var(--text-muted)', padding: '5px 8px' }}
+                  onClick={() => {
+                    setShowForm(false)
+                    setError('')
+                  }}
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          ) : (
             <button
               type="button"
-              style={{ fontSize: 12, color: 'var(--text-muted)', padding: '5px 8px' }}
+              className="checklist-add"
               onClick={() => {
-                setShowForm(false)
+                setShowForm(true)
                 setError('')
               }}
             >
-              취소
+              + 링크 레퍼런스 추가
             </button>
-          </div>
-        </div>
-      ) : (
-        <button
-          type="button"
-          className="checklist-add"
-          onClick={() => {
-            setShowForm(true)
-            setError('')
-          }}
-        >
-          + 링크 레퍼런스 추가
-        </button>
-      )}
+          )}
 
-      {!showForm && error && <div className="ref-error">{error}</div>}
+          {!showForm && error && <div className="ref-error">{error}</div>}
+
+          <button
+            type="button"
+            className={`reference-dropzone${dragActive ? ' active' : ''}`}
+            aria-label="이미지 레퍼런스 붙이기"
+            onClick={() => fileInputRef.current?.click()}
+            onDragEnter={e => {
+              e.preventDefault()
+              setDragActive(true)
+            }}
+            onDragOver={e => {
+              e.preventDefault()
+              setDragActive(true)
+            }}
+            onDragLeave={e => {
+              e.preventDefault()
+              if (e.currentTarget === e.target) setDragActive(false)
+            }}
+            onDrop={e => {
+              e.preventDefault()
+              setDragActive(false)
+              if (e.dataTransfer.files?.length) void handleFiles(e.dataTransfer.files)
+            }}
+          >
+            {uploading && <div className="reference-dropzone__status">이미지 붙이는 중...</div>}
+          </button>
+
+          {imageReferences.length > 0 && (
+            <div className="reference-board">
+              {imageReferences.map(reference => (
+                <ImageReferenceCard key={reference.id} sceneId={scene.id} reference={reference} />
+              ))}
+            </div>
+          )}
+
+          {linkReferences.map(reference => (
+            <LinkReferenceItem key={reference.id} sceneId={scene.id} reference={reference} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

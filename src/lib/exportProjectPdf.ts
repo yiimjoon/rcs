@@ -1,533 +1,326 @@
-import { calculateAutoDuration, formatDuration } from './duration'
-import { getBRollSubtypeLabel, getDeviceLabel, getHookTypeLabel, getRoleLabel } from './taxonomy'
-import { getReferenceAsset } from './referenceAssets'
-import type { Project, Reference, Scene } from './types'
-
-interface PreparedImageReference {
-  id: string
-  caption: string
-  meta: string
-  src: string | null
-  isRemote: boolean
+function sanitizeFilename(value: string) {
+  const normalized = value.trim().replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_')
+  return normalized.length > 0 ? normalized : 'project'
 }
 
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
+interface SliceRange {
+  startX: number
+  endX: number
 }
 
-function formatMultiline(value: string) {
-  return escapeHtml(value).replace(/\n/g, '<br />')
+interface SceneBound {
+  left: number
+  right: number
 }
 
-function blobToDataUrl(blob: Blob) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '')
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(blob)
-  })
+function createSliceCanvas(canvas: HTMLCanvasElement, range: SliceRange) {
+  const sliceWidth = Math.max(1, Math.round(range.endX - range.startX))
+  const sliceCanvas = document.createElement('canvas')
+  sliceCanvas.width = sliceWidth
+  sliceCanvas.height = canvas.height
+
+  const context = sliceCanvas.getContext('2d')
+  if (!context) return null
+
+  context.drawImage(
+    canvas,
+    range.startX,
+    0,
+    sliceWidth,
+    canvas.height,
+    0,
+    0,
+    sliceWidth,
+    canvas.height
+  )
+
+  return sliceCanvas
 }
 
-function getReferenceMeta(reference: Reference) {
-  if (reference.source === 'local') {
-    return reference.filename ?? '로컬 이미지'
-  }
-
-  try {
-    return new URL(reference.url).hostname
-  } catch {
-    return reference.url
-  }
-}
-
-async function resolveImageReference(reference: Reference): Promise<PreparedImageReference | null> {
-  if (reference.type !== 'image') return null
-
-  if (reference.source === 'local' && reference.assetId) {
-    try {
-      const asset = await getReferenceAsset(reference.assetId)
-      if (!asset) {
-        return {
-          id: reference.id,
-          caption: reference.caption || getReferenceMeta(reference),
-          meta: getReferenceMeta(reference),
-          src: null,
-          isRemote: false,
-        }
-      }
-
-      return {
-        id: reference.id,
-        caption: reference.caption || getReferenceMeta(reference),
-        meta: getReferenceMeta(reference),
-        src: await blobToDataUrl(asset.blob),
-        isRemote: false,
-      }
-    } catch {
-      return {
-        id: reference.id,
-        caption: reference.caption || getReferenceMeta(reference),
-        meta: getReferenceMeta(reference),
-        src: null,
-        isRemote: false,
-      }
-    }
-  }
-
-  return {
-    id: reference.id,
-    caption: reference.caption || getReferenceMeta(reference),
-    meta: getReferenceMeta(reference),
-    src: reference.url,
-    isRemote: true,
-  }
-}
-
-function renderInfoList(title: string, items: string[]) {
-  if (items.length === 0) return ''
-
-  return `
-    <section class="export-section">
-      <div class="export-label">${escapeHtml(title)}</div>
-      <div class="export-chip-row">
-        ${items.map(item => `<span class="export-chip">${escapeHtml(item)}</span>`).join('')}
-      </div>
-    </section>
-  `
-}
-
-function buildPrintHtml(
-  project: Project,
-  scenes: Scene[],
-  preparedImages: Map<string, PreparedImageReference[]>
+function buildSceneAlignedSliceRanges(
+  canvasWidth: number,
+  maxSliceWidth: number,
+  sceneBounds: SceneBound[]
 ) {
-  const totalSeconds = scenes.reduce(
-    (sum, scene) => sum + calculateAutoDuration(scene.narration) + scene.durationManual,
-    0
-  )
-
-  const generatedAt = new Intl.DateTimeFormat('ko-KR', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date())
-
-  const sceneMarkup = scenes.map((scene, index) => {
-    const totalSceneSeconds = calculateAutoDuration(scene.narration) + scene.durationManual
-    const roleLabels = scene.segmentRoles.map(getRoleLabel)
-    const hookTypeLabels = scene.hookTypes.map(getHookTypeLabel)
-    const retentionLabels = scene.retentionEnabled
-      ? scene.retentionDevices.map(getDeviceLabel)
-      : []
-    const bRollSubtypeLabels = scene.bRollSubtypes.map(getBRollSubtypeLabel)
-    const onScreenTexts = scene.onScreenTexts
-      .map(item => item.text.trim())
-      .filter(Boolean)
-    const linkReferences = scene.references.filter(reference => reference.type === 'link')
-    const imageReferences = preparedImages.get(scene.id) ?? []
-
-    return `
-      <article class="scene-sheet">
-        <div class="scene-sheet__meta">
-          <div class="scene-sheet__number">SCENE ${index + 1}</div>
-          <div class="scene-sheet__duration">${escapeHtml(formatDuration(totalSceneSeconds))}</div>
-        </div>
-        <h2 class="scene-sheet__title">${escapeHtml(scene.title)}</h2>
-
-        ${renderInfoList('세그먼트 롤', roleLabels)}
-        ${renderInfoList('훅 타입', hookTypeLabels)}
-        ${renderInfoList('리텐션', retentionLabels)}
-        ${renderInfoList('B-ROLL TYPE', bRollSubtypeLabels)}
-
-        <section class="export-section">
-          <div class="export-label">내레이션</div>
-          <div class="export-copy">${formatMultiline(scene.narration || '작성 내용 없음')}</div>
-        </section>
-
-        ${
-          scene.planningNotes.trim()
-            ? `
-              <section class="export-section">
-                <div class="export-label">기획 메모</div>
-                <div class="export-copy export-copy--notes">${formatMultiline(scene.planningNotes)}</div>
-              </section>
-            `
-            : ''
-        }
-
-        ${
-          onScreenTexts.length > 0
-            ? `
-              <section class="export-section">
-                <div class="export-label">온스크린 텍스트</div>
-                <ul class="export-list">
-                  ${onScreenTexts.map(text => `<li>${escapeHtml(text)}</li>`).join('')}
-                </ul>
-              </section>
-            `
-            : ''
-        }
-
-        ${
-          imageReferences.length > 0
-            ? `
-              <section class="export-section">
-                <div class="export-label">이미지 레퍼런스</div>
-                <div class="export-image-grid">
-                  ${imageReferences.map(reference => `
-                    <figure class="export-image-card">
-                      ${
-                        reference.src
-                          ? `<img class="export-image-card__img" src="${escapeHtml(reference.src)}" alt="${escapeHtml(reference.caption)}" ${reference.isRemote ? 'referrerpolicy="no-referrer"' : ''} />`
-                          : `<div class="export-image-card__fallback">미리보기를 불러오지 못했습니다</div>`
-                      }
-                      <figcaption class="export-image-card__caption">
-                        <strong>${escapeHtml(reference.caption)}</strong>
-                        <span>${escapeHtml(reference.meta)}</span>
-                      </figcaption>
-                    </figure>
-                  `).join('')}
-                </div>
-              </section>
-            `
-            : ''
-        }
-
-        ${
-          linkReferences.length > 0
-            ? `
-              <section class="export-section">
-                <div class="export-label">링크 레퍼런스</div>
-                <ul class="export-list export-list--links">
-                  ${linkReferences.map(reference => `
-                    <li>
-                      <strong>${escapeHtml(reference.caption || getReferenceMeta(reference))}</strong>
-                      <span>${escapeHtml(reference.url)}</span>
-                    </li>
-                  `).join('')}
-                </ul>
-              </section>
-            `
-            : ''
-        }
-      </article>
-    `
-  }).join('')
-
-  return `<!doctype html>
-  <html lang="ko">
-    <head>
-      <meta charset="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>${escapeHtml(project.title)} - PDF Export</title>
-      <style>
-        :root {
-          color-scheme: light;
-          --paper: #ffffff;
-          --ink: #1f1f1b;
-          --muted: #726d66;
-          --line: #dfd9d1;
-          --accent: #e85d2c;
-          --chip: #f5efe8;
-          --section: #fbf8f4;
-        }
-
-        * { box-sizing: border-box; }
-
-        body {
-          margin: 0;
-          color: var(--ink);
-          background: #efe9e2;
-          font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
-        }
-
-        .export-doc {
-          max-width: 1120px;
-          margin: 0 auto;
-          padding: 32px 24px 48px;
-        }
-
-        .export-header {
-          background: linear-gradient(135deg, #fff7ef, #ffffff);
-          border: 1px solid var(--line);
-          padding: 28px 30px;
-          margin-bottom: 24px;
-        }
-
-        .export-kicker {
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.16em;
-          color: var(--accent);
-          text-transform: uppercase;
-        }
-
-        .export-title {
-          margin: 10px 0 8px;
-          font-size: 34px;
-          line-height: 1.1;
-        }
-
-        .export-summary {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 12px;
-          color: var(--muted);
-          font-size: 13px;
-        }
-
-        .scene-sheet {
-          background: var(--paper);
-          border: 1px solid var(--line);
-          padding: 24px;
-          margin-bottom: 18px;
-          break-inside: avoid;
-          page-break-inside: avoid;
-        }
-
-        .scene-sheet__meta {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          color: var(--muted);
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-        }
-
-        .scene-sheet__title {
-          margin: 10px 0 20px;
-          font-size: 24px;
-          line-height: 1.2;
-        }
-
-        .export-section {
-          margin-top: 16px;
-          padding: 14px 16px;
-          background: var(--section);
-          border: 1px solid #ebe4dc;
-        }
-
-        .export-label {
-          margin-bottom: 10px;
-          font-size: 11px;
-          font-weight: 700;
-          color: var(--muted);
-          letter-spacing: 0.16em;
-          text-transform: uppercase;
-        }
-
-        .export-chip-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-
-        .export-chip {
-          display: inline-flex;
-          align-items: center;
-          min-height: 28px;
-          padding: 0 10px;
-          background: var(--chip);
-          border: 1px solid #ead8c9;
-          font-size: 12px;
-          font-weight: 600;
-        }
-
-        .export-copy {
-          white-space: normal;
-          line-height: 1.72;
-          font-size: 14px;
-        }
-
-        .export-copy--notes {
-          color: #403a33;
-        }
-
-        .export-list {
-          margin: 0;
-          padding-left: 18px;
-          display: grid;
-          gap: 8px;
-          font-size: 13px;
-          line-height: 1.6;
-        }
-
-        .export-list--links li {
-          list-style: disc;
-        }
-
-        .export-list--links strong,
-        .export-list--links span {
-          display: block;
-        }
-
-        .export-list--links span {
-          color: var(--muted);
-          word-break: break-all;
-        }
-
-        .export-image-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 12px;
-        }
-
-        .export-image-card {
-          margin: 0;
-          border: 1px solid #e7dfd6;
-          background: #fff;
-        }
-
-        .export-image-card__img,
-        .export-image-card__fallback {
-          width: 100%;
-          aspect-ratio: 4 / 3;
-          display: block;
-          background: #f1ece6;
-        }
-
-        .export-image-card__img {
-          object-fit: cover;
-        }
-
-        .export-image-card__fallback {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 18px;
-          text-align: center;
-          color: var(--muted);
-          font-size: 12px;
-        }
-
-        .export-image-card__caption {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          padding: 10px 12px 12px;
-          font-size: 12px;
-          line-height: 1.5;
-        }
-
-        .export-image-card__caption span {
-          color: var(--muted);
-        }
-
-        @page {
-          size: A4;
-          margin: 12mm;
-        }
-
-        @media print {
-          body {
-            background: #fff;
-          }
-
-          .export-doc {
-            max-width: none;
-            padding: 0;
-          }
-
-          .export-header {
-            break-after: avoid;
-          }
-        }
-      </style>
-    </head>
-    <body>
-      <main class="export-doc">
-        <header class="export-header">
-          <div class="export-kicker">RCScript PDF</div>
-          <h1 class="export-title">${escapeHtml(project.title)}</h1>
-          <div class="export-summary">
-            <span>총 ${scenes.length}개 씬</span>
-            <span>${escapeHtml(formatDuration(totalSeconds))}</span>
-            <span>${escapeHtml(generatedAt)} 생성</span>
-          </div>
-        </header>
-        ${sceneMarkup}
-      </main>
-      <script>
-        window.addEventListener('load', () => {
-          const imagePromises = Array.from(document.images).map(image => {
-            if (image.complete) return Promise.resolve()
-            return new Promise(resolve => {
-              image.addEventListener('load', resolve, { once: true })
-              image.addEventListener('error', resolve, { once: true })
-            })
-          })
-
-          Promise.race([
-            Promise.all(imagePromises),
-            new Promise(resolve => setTimeout(resolve, 1500)),
-          ]).then(() => {
-            setTimeout(() => window.print(), 150)
-          })
-        })
-      </script>
-    </body>
-  </html>`
-}
-
-export async function exportProjectToPdf(project: Project, scenes: Scene[]) {
-  const printWindow = window.open('', '_blank')
-
-  if (!printWindow) {
-    throw new Error('팝업 차단으로 인쇄 창을 열 수 없습니다.')
+  if (sceneBounds.length === 0) {
+    return [{ startX: 0, endX: canvasWidth }]
   }
 
-  printWindow.document.open()
-  printWindow.document.write(`<!doctype html>
-    <html lang="ko">
-      <head>
-        <meta charset="utf-8" />
-        <title>PDF 준비 중</title>
-        <style>
-          body {
-            margin: 0;
-            display: grid;
-            place-items: center;
-            min-height: 100vh;
-            background: #f7f2eb;
-            color: #1f1f1b;
-            font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
-          }
+  const ranges: SliceRange[] = []
+  let startSceneIndex = 0
 
-          .loading {
-            padding: 24px 28px;
-            border: 1px solid #e2d9cf;
-            background: #fff;
-            font-size: 14px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="loading">PDF 문서를 준비하는 중입니다...</div>
-      </body>
-    </html>`)
-  printWindow.document.close()
+  while (startSceneIndex < sceneBounds.length) {
+    const startX = startSceneIndex === 0 ? 0 : sceneBounds[startSceneIndex].left
+    let endX = sceneBounds[startSceneIndex].right
+    let endSceneIndex = startSceneIndex
 
-  const preparedEntries = await Promise.all(
-    scenes.map(async scene => [
-      scene.id,
-      (
-        await Promise.all(scene.references.map(reference => resolveImageReference(reference)))
-      ).filter((item): item is PreparedImageReference => item !== null),
-    ] as const)
+    for (let index = startSceneIndex + 1; index < sceneBounds.length; index += 1) {
+      const candidateEndX = sceneBounds[index].right
+      if (candidateEndX - startX > maxSliceWidth) break
+      endX = candidateEndX
+      endSceneIndex = index
+    }
+
+    ranges.push({
+      startX: Math.max(0, Math.round(startX)),
+      endX: Math.min(canvasWidth, Math.round(endX)),
+    })
+
+    startSceneIndex = endSceneIndex + 1
+  }
+
+  return ranges
+}
+
+function isScrollableElement(element: HTMLElement) {
+  const overflowY = window.getComputedStyle(element).overflowY
+  return (overflowY === 'auto' || overflowY === 'scroll') && element.scrollHeight > element.clientHeight + 1
+}
+
+export async function exportProjectToPdf(projectTitle: string) {
+  const exportRoot = document.querySelector<HTMLElement>('[data-export-root="true"]')
+  if (!exportRoot) {
+    throw new Error('캡처할 화면을 찾지 못했습니다.')
+  }
+
+  const appBody = exportRoot.querySelector<HTMLElement>('.app-body')
+  const timelineWrap = exportRoot.querySelector<HTMLElement>('.timeline-wrap')
+  const timeline = exportRoot.querySelector<HTMLElement>('.timeline')
+  const fixedSidebar = exportRoot.querySelector<HTMLElement>('.fixed-sidebar')
+  const toolbar = exportRoot.querySelector<HTMLElement>('.toolbar')
+  const projectBrief = exportRoot.querySelector<HTMLElement>('.project-brief')
+  const sceneColumns = Array.from(
+    exportRoot.querySelectorAll<HTMLElement>('.scene-col[data-export-key]')
+  )
+  const sceneHeights = new Map(
+    sceneColumns.map(column => [column.dataset.exportKey ?? '', column.scrollHeight])
+  )
+  const maxSceneHeight = sceneColumns.reduce(
+    (maxHeight, column) => Math.max(maxHeight, column.scrollHeight),
+    appBody?.clientHeight ?? 0
+  )
+  const timelineWidth = Math.max(
+    timeline?.scrollWidth ?? 0,
+    timelineWrap?.scrollWidth ?? 0,
+    timelineWrap?.clientWidth ?? 0
+  )
+  const fixedSidebarWidth = fixedSidebar?.offsetWidth ?? 0
+  const fullWidth = Math.max(exportRoot.clientWidth, fixedSidebarWidth + timelineWidth)
+  const appBodyHeight = Math.max(appBody?.clientHeight ?? 0, maxSceneHeight)
+  const totalHeight = Math.max(
+    exportRoot.clientHeight,
+    (toolbar?.offsetHeight ?? 0) + (projectBrief?.offsetHeight ?? 0) + appBodyHeight
   )
 
-  const preparedImages = new Map(preparedEntries)
-  const printHtml = buildPrintHtml(project, scenes, preparedImages)
+  const { default: html2canvas } = await import('html2canvas')
+  const [{ jsPDF }] = await Promise.all([import('jspdf')])
+  const scrollSnapshots = Array.from(
+    document.querySelectorAll<HTMLElement>('[data-export-scroll="true"]')
+  ).map(element => ({
+    key: element.dataset.exportKey ?? '',
+    scrollLeft: element.scrollLeft,
+    scrollTop: element.scrollTop,
+  }))
 
-  printWindow.document.open()
-  printWindow.document.write(printHtml)
-  printWindow.document.close()
-  printWindow.focus()
+  const canvas = await html2canvas(exportRoot, {
+    backgroundColor: '#ffffff',
+    useCORS: true,
+    logging: false,
+    scale: Math.min(Math.max(window.devicePixelRatio || 1, 1), 2),
+    width: fullWidth,
+    height: totalHeight,
+    windowWidth: fullWidth,
+    windowHeight: totalHeight,
+    onclone: clonedDocument => {
+      clonedDocument.documentElement.style.height = 'auto'
+      clonedDocument.documentElement.style.overflow = 'visible'
+      clonedDocument.body.style.height = 'auto'
+      clonedDocument.body.style.overflow = 'visible'
+
+      const clonedExportRoot = clonedDocument.querySelector<HTMLElement>('[data-export-root="true"]')
+      if (clonedExportRoot) {
+        clonedExportRoot.style.width = `${fullWidth}px`
+        clonedExportRoot.style.height = `${totalHeight}px`
+        clonedExportRoot.style.minHeight = `${totalHeight}px`
+        clonedExportRoot.style.overflow = 'visible'
+      }
+
+      const clonedAppBody = clonedDocument.querySelector<HTMLElement>('.app-body')
+      if (clonedAppBody) {
+        clonedAppBody.style.height = `${appBodyHeight}px`
+        clonedAppBody.style.minHeight = `${appBodyHeight}px`
+        clonedAppBody.style.width = `${fullWidth}px`
+        clonedAppBody.style.overflow = 'visible'
+        clonedAppBody.style.alignItems = 'flex-start'
+      }
+
+      const clonedFixedSidebar = clonedDocument.querySelector<HTMLElement>('.fixed-sidebar')
+      if (clonedFixedSidebar) {
+        clonedFixedSidebar.style.height = `${appBodyHeight}px`
+        clonedFixedSidebar.style.minHeight = `${appBodyHeight}px`
+      }
+
+      const clonedToolbar = clonedDocument.querySelector<HTMLElement>('.toolbar')
+      if (clonedToolbar) {
+        clonedToolbar.style.width = `${fullWidth}px`
+      }
+
+      const clonedProjectBrief = clonedDocument.querySelector<HTMLElement>('.project-brief')
+      if (clonedProjectBrief) {
+        clonedProjectBrief.style.width = `${fullWidth}px`
+      }
+
+      const clonedTimelineWrap = clonedDocument.querySelector<HTMLElement>('.timeline-wrap')
+      if (clonedTimelineWrap) {
+        clonedTimelineWrap.style.height = `${appBodyHeight}px`
+        clonedTimelineWrap.style.minHeight = `${appBodyHeight}px`
+        clonedTimelineWrap.style.width = `${timelineWidth}px`
+        clonedTimelineWrap.style.minWidth = `${timelineWidth}px`
+        clonedTimelineWrap.style.overflow = 'visible'
+      }
+
+      const clonedTimeline = clonedDocument.querySelector<HTMLElement>('.timeline')
+      if (clonedTimeline) {
+        clonedTimeline.style.height = 'auto'
+        clonedTimeline.style.minHeight = `${appBodyHeight}px`
+        clonedTimeline.style.width = `${timelineWidth}px`
+        clonedTimeline.style.minWidth = `${timelineWidth}px`
+        clonedTimeline.style.alignItems = 'flex-start'
+      }
+
+      const clonedScrollables = Array.from(
+        clonedDocument.querySelectorAll<HTMLElement>('[data-export-scroll="true"]')
+      )
+
+      for (const clonedElement of clonedScrollables) {
+        const key = clonedElement.dataset.exportKey ?? ''
+        const snapshot = scrollSnapshots.find(item => item.key === key)
+
+        if (clonedElement.classList.contains('scene-col')) {
+          const columnHeight = sceneHeights.get(key) ?? appBodyHeight
+          clonedElement.style.height = `${columnHeight}px`
+          clonedElement.style.minHeight = `${columnHeight}px`
+          clonedElement.style.maxHeight = 'none'
+          clonedElement.style.overflow = 'visible'
+          clonedElement.scrollTop = 0
+
+          const sceneShell = clonedElement.parentElement
+          if (sceneShell instanceof HTMLElement) {
+            sceneShell.style.height = `${columnHeight}px`
+            sceneShell.style.minHeight = `${columnHeight}px`
+            sceneShell.style.maxHeight = 'none'
+            sceneShell.style.overflow = 'visible'
+          }
+
+          const nestedScrollables = Array.from(clonedElement.querySelectorAll<HTMLElement>('*')).filter(
+            nestedElement => isScrollableElement(nestedElement)
+          )
+
+          for (const nestedElement of nestedScrollables) {
+            nestedElement.style.height = `${nestedElement.scrollHeight}px`
+            nestedElement.style.minHeight = `${nestedElement.scrollHeight}px`
+            nestedElement.style.maxHeight = 'none'
+            nestedElement.style.overflow = 'visible'
+            nestedElement.scrollTop = 0
+          }
+          continue
+        }
+
+        if (clonedElement.classList.contains('timeline-wrap')) {
+          clonedElement.style.height = `${appBodyHeight}px`
+          clonedElement.style.minHeight = `${appBodyHeight}px`
+          clonedElement.style.width = `${timelineWidth}px`
+          clonedElement.style.minWidth = `${timelineWidth}px`
+          clonedElement.style.maxHeight = 'none'
+          clonedElement.style.overflow = 'visible'
+          clonedElement.scrollLeft = 0
+          continue
+        }
+
+        if (!snapshot) continue
+        clonedElement.scrollLeft = snapshot.scrollLeft
+        clonedElement.scrollTop = snapshot.scrollTop
+      }
+
+      const clonedSceneHeaders = Array.from(
+        clonedDocument.querySelectorAll<HTMLElement>('.scene-header')
+      )
+      for (const header of clonedSceneHeaders) {
+        header.style.position = 'static'
+      }
+
+      const exportHiddenElements = Array.from(
+        clonedDocument.querySelectorAll<HTMLElement>('[data-export-hide="true"]')
+      )
+      for (const element of exportHiddenElements) {
+        element.style.display = 'none'
+      }
+
+      const clonedAddSceneColumns = Array.from(
+        clonedDocument.querySelectorAll<HTMLElement>('.add-scene-col')
+      )
+      for (const element of clonedAddSceneColumns) {
+        element.style.display = 'none'
+      }
+    },
+  })
+
+  const pdf = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a4',
+    compress: true,
+  })
+  const pageWidth = pdf.internal.pageSize.getWidth()
+  const pageHeight = pdf.internal.pageSize.getHeight()
+  const margin = 6
+  const contentWidth = pageWidth - margin * 2
+  const contentHeight = pageHeight - margin * 2
+  const maxSliceWidth = Math.max(1, Math.round(canvas.height * (contentWidth / contentHeight)))
+  const exportRootRect = exportRoot.getBoundingClientRect()
+  const timelineRect = timeline?.getBoundingClientRect()
+  const timelineWrapRect = timelineWrap?.getBoundingClientRect()
+  const timelineStartInRoot = timelineWrapRect
+    ? timelineWrapRect.left - exportRootRect.left
+    : fixedSidebarWidth
+  const canvasScaleX = fullWidth > 0 ? canvas.width / fullWidth : 1
+  const sceneBoundsOnCanvas = timelineRect
+    ? sceneColumns
+        .map<SceneBound>(column => {
+          const rect = column.getBoundingClientRect()
+          const leftInTimeline = rect.left - timelineRect.left
+          const leftInRoot = timelineStartInRoot + leftInTimeline
+          return {
+            left: leftInRoot * canvasScaleX,
+            right: (leftInRoot + rect.width) * canvasScaleX,
+          }
+        })
+        .sort((left, right) => left.left - right.left)
+    : []
+  const pageSlices = buildSceneAlignedSliceRanges(canvas.width, maxSliceWidth, sceneBoundsOnCanvas)
+    .map(range => createSliceCanvas(canvas, range))
+    .filter((slice): slice is HTMLCanvasElement => slice !== null)
+
+  pageSlices.forEach((sliceCanvas, index) => {
+    if (index > 0) {
+      pdf.addPage('a4', 'landscape')
+    }
+
+    const imageData = sliceCanvas.toDataURL('image/jpeg', 0.96)
+    const sliceAspectRatio = sliceCanvas.width / sliceCanvas.height
+    let displayWidth = contentWidth
+    let displayHeight = displayWidth / sliceAspectRatio
+
+    if (displayHeight > contentHeight) {
+      displayHeight = contentHeight
+      displayWidth = displayHeight * sliceAspectRatio
+    }
+
+    const offsetX = margin + (contentWidth - displayWidth) / 2
+    const offsetY = margin + (contentHeight - displayHeight) / 2
+
+    pdf.addImage(imageData, 'JPEG', offsetX, offsetY, displayWidth, displayHeight, undefined, 'FAST')
+  })
+
+  pdf.save(`${sanitizeFilename(projectTitle)}.pdf`)
 }

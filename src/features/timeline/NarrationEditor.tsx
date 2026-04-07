@@ -19,12 +19,12 @@ export function NarrationEditor({ scene }: Props) {
 
   return (
     <div className="narration-section">
-      <div className="section-label">Narration</div>
+      <div className="section-label">Voiceover</div>
       <textarea
         ref={ref}
         className="narration-textarea"
         value={scene.narration}
-        placeholder="대본을 입력하세요..."
+        placeholder="보이스오버 대본을 입력하세요..."
         onChange={e => updateScene(scene.id, { narration: e.target.value })}
         rows={4}
       />

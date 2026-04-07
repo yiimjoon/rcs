@@ -28,7 +28,7 @@ export function Toolbar({ projectId }: Props) {
     setExportingPdf(true)
 
     try {
-      await exportProjectToPdf(project, scenes)
+      await exportProjectToPdf(project.title)
     } catch (error) {
       window.alert(
         error instanceof Error
@@ -99,11 +99,6 @@ export function Toolbar({ projectId }: Props) {
             <Play size={14} />
             읽기 모드
           </button>
-        )}
-        {!allLocked && scenes.length > 0 && (
-          <span className="toolbar__hint">
-            모든 씬 잠금 시 읽기 모드 활성화
-          </span>
         )}
       </div>
     </div>

@@ -9,6 +9,7 @@ import { getRoleColor, getRoleLabel, getDeviceLabel } from '../../lib/taxonomy'
 import type { Scene } from '../../lib/types'
 import { DurationStepper } from './DurationStepper'
 import { NarrationEditor } from './NarrationEditor'
+import { SceneDirectionBoard } from './SceneDirectionBoard'
 import { SceneNotesEditor } from './SceneNotesEditor'
 import { OnScreenChecklist } from './OnScreenChecklist'
 import { ReferencePanel } from './ReferencePanel'
@@ -55,6 +56,8 @@ export function SceneColumn({ scene, index }: Props) {
       transition={SPRING_HEAVY}
       animate={isDragging ? { rotate: 2, scale: 1.02 } : { rotate: 0, scale: 1 }}
       className={`scene-col${scene.isLocked ? ' locked' : ''}${isDragging ? ' scene-col--dragging' : ''}`}
+      data-export-scroll="true"
+      data-export-key={`scene-col-${scene.id}`}
     >
       {/* Header */}
       <div className="scene-header">
@@ -139,23 +142,26 @@ export function SceneColumn({ scene, index }: Props) {
         />
       </div>
 
+      {/* References */}
+      <ReferencePanel scene={scene} />
+
       {/* Duration */}
       <DurationStepper scene={scene} />
 
       {/* Narration */}
       <NarrationEditor scene={scene} />
 
+      {/* On-screen checklist */}
+      <OnScreenChecklist scene={scene} />
+
+      {/* Direction board */}
+      <SceneDirectionBoard scene={scene} />
+
       {/* Planning notes */}
       <SceneNotesEditor scene={scene} />
 
       {/* Taxonomy — role, hook type, retention devices */}
       <TaxonomyPanel scene={scene} />
-
-      {/* On-screen checklist */}
-      <OnScreenChecklist scene={scene} />
-
-      {/* References */}
-      <ReferencePanel scene={scene} />
     </motion.div>
   )
 }

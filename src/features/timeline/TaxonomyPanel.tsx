@@ -1,6 +1,6 @@
 import { useSceneStore } from '../../stores/sceneStore'
-import { B_ROLL_SUBTYPES, SEGMENT_ROLES, HOOK_TYPES, RETENTION_DEVICES, getRoleColor } from '../../lib/taxonomy'
-import type { Scene, SegmentRole, HookType, RetentionDevice, BRollSubtype } from '../../lib/types'
+import { B_ROLL_SUBTYPES, CINEMATOGRAPHY_TAGS, SEGMENT_ROLES, HOOK_TYPES, RETENTION_DEVICES, getRoleColor } from '../../lib/taxonomy'
+import type { Scene, SegmentRole, HookType, RetentionDevice, BRollSubtype, CinematographyTag } from '../../lib/types'
 
 interface Props {
   scene: Scene
@@ -16,6 +16,9 @@ export function TaxonomyPanel({ scene }: Props) {
     : []
   const bRollSubtypes = Array.isArray(scene.bRollSubtypes)
     ? scene.bRollSubtypes
+    : []
+  const cinematographyTags = Array.isArray(scene.cinematographyTags)
+    ? scene.cinematographyTags
     : []
 
   const toggleRole = (role: SegmentRole) => {
@@ -54,6 +57,13 @@ export function TaxonomyPanel({ scene }: Props) {
     updateScene(scene.id, { bRollSubtypes: next })
   }
 
+  const toggleCinematographyTag = (tag: CinematographyTag) => {
+    const next = cinematographyTags.includes(tag)
+      ? cinematographyTags.filter(value => value !== tag)
+      : [...cinematographyTags, tag]
+    updateScene(scene.id, { cinematographyTags: next })
+  }
+
   const toggleRetention = () => {
     const next = !scene.retentionEnabled
     updateScene(scene.id, {
@@ -67,7 +77,7 @@ export function TaxonomyPanel({ scene }: Props) {
   const hasBRoll = scene.retentionEnabled && scene.retentionDevices.includes('b_roll')
 
   return (
-    <div className="taxonomy-panel">
+    <div className="taxonomy-panel" data-export-hide="true">
       {/* Segment Role — 항상 표시 */}
       <div className="taxonomy-section">
         <div className="taxonomy-label">SEGMENT ROLE</div>
@@ -154,6 +164,23 @@ export function TaxonomyPanel({ scene }: Props) {
             )}
           </>
         )}
+      </div>
+
+      <div className="taxonomy-section">
+        <div className="taxonomy-label">CINEMATOGRAPHY</div>
+        <div className="taxonomy-role-pills">
+          {CINEMATOGRAPHY_TAGS.map(tag => (
+            <button
+              key={tag.value}
+              className={`role-pill role-pill--sub${cinematographyTags.includes(tag.value) ? ' active' : ''}`}
+              style={cinematographyTags.includes(tag.value) ? { background: getRoleColor('retain'), borderColor: getRoleColor('retain') } : {}}
+              onClick={() => toggleCinematographyTag(tag.value)}
+              title={tag.description}
+            >
+              {tag.label}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   )

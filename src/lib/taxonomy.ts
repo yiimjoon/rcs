@@ -1,8 +1,9 @@
-import type { SegmentRole, HookType, RetentionDevice, BRollSubtype } from './types'
+import type { SegmentRole, HookType, RetentionDevice, BRollSubtype, CinematographyTag } from './types'
 
 export const SEGMENT_ROLES: { value: SegmentRole; label: string; color: string }[] = [
   { value: 'hook',      label: '훅',    color: '#E85D2C' },
   { value: 'problem',   label: '문제', color: '#D1495B' },
+  { value: 'answer',    label: '해답', color: '#C4681A' },
   { value: 'desire',    label: '욕구', color: '#E76F51' },
   { value: 'positioning', label: '포지셔닝', color: '#3D5A80' },
   { value: 'solution',  label: '솔루션', color: '#2A9D8F' },
@@ -91,6 +92,25 @@ export const B_ROLL_SUBTYPES: { value: BRollSubtype; label: string }[] = [
   { value: 'software_ui', label: 'software_ui' },
 ]
 
+export const CINEMATOGRAPHY_TAGS: { value: CinematographyTag; label: string; description: string }[] = [
+  { value: 'extreme_wide', label: '익스트림 와이드', description: '공간감과 스케일을 크게 보여주는 원경' },
+  { value: 'wide_shot', label: '와이드', description: '배경과 인물을 함께 넉넉하게 보여주는 기본 원경 샷' },
+  { value: 'full_shot', label: '풀샷', description: '인물의 전신이나 전체 구도를 담는 기본 샷' },
+  { value: 'knee_shot', label: '니샷', description: '무릎 위까지 잡아 움직임과 표정을 함께 살리는 샷' },
+  { value: 'waist_shot', label: '웨이스트', description: '허리 위 중심으로 설명형 말하기 컷에 적합한 샷' },
+  { value: 'chest_shot', label: '체스트', description: '가슴선 위주로 감정과 메시지 전달에 집중하는 샷' },
+  { value: 'close_up', label: '클로즈업', description: '표정, 제품, 디테일에 집중시키는 근접 샷' },
+  { value: 'extreme_close_up', label: '익스트림 클로즈업', description: '눈, 손, 제품 포인트처럼 아주 작은 디테일을 강조하는 샷' },
+  { value: 'insert_cut', label: '인서트 컷', description: '핵심 정보나 디테일을 끼워 넣는 보조 샷' },
+  { value: 'three_quarter_angle', label: '쓰리쿼터', description: '정면과 측면 사이 45도 전후의 사선에서 잡는 앵글' },
+  { value: 'profile_angle', label: '프로파일', description: '인물의 측면 90도에서 윤곽과 라인을 보여주는 샷' },
+  { value: 'eye_level', label: '아이레벨', description: '시청자와 같은 눈높이에서 안정감 있게 보여주는 앵글' },
+  { value: 'high_angle', label: '하이앵글', description: '위에서 아래로 내려다보며 상황을 정리해 보여주는 앵글' },
+  { value: 'overhead', label: '부감', description: '천장 쪽에서 내려다보는 탑뷰 성격의 샷' },
+  { value: 'low_angle', label: '로우앵글', description: '아래에서 올려다보며 존재감과 힘을 강조하는 앵글' },
+  { value: 'over_shoulder', label: '오버숄더', description: '상대나 작업 대상을 시점감 있게 보여주는 샷' },
+]
+
 export function getRoleColor(role: SegmentRole | null): string {
   return SEGMENT_ROLES.find(r => r.value === role)?.color ?? '#888880'
 }
@@ -109,4 +129,8 @@ export function getDeviceLabel(device: RetentionDevice): string {
 
 export function getBRollSubtypeLabel(subtype: BRollSubtype | null): string {
   return B_ROLL_SUBTYPES.find(item => item.value === subtype)?.label ?? '—'
+}
+
+export function getCinematographyTagLabel(tag: CinematographyTag | null): string {
+  return CINEMATOGRAPHY_TAGS.find(item => item.value === tag)?.label ?? '—'
 }

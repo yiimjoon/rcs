@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { BRollSubtype, Scene, OnScreenText, Reference, SegmentRole } from '../lib/types'
+import type { BRollSubtype, CinematographyTag, Scene, OnScreenText, Reference, SegmentRole } from '../lib/types'
 import { generateId } from '../lib/id'
 import { backupPersistedValue } from '../lib/persistBackup'
 import {
@@ -38,10 +38,23 @@ function getLegacyCompatibleBRollSubtypes(scene: Scene & { bRollSubtype?: BRollS
   return scene.bRollSubtype ? [scene.bRollSubtype] : []
 }
 
+function getLegacyCompatibleCinematographyTags(
+  scene: Scene & { cinematographyTag?: CinematographyTag | null }
+) {
+  if (Array.isArray(scene.cinematographyTags)) {
+    return scene.cinematographyTags.filter(Boolean)
+  }
+
+  return scene.cinematographyTag ? [scene.cinematographyTag] : []
+}
+
 function normalizeScene(scene: Scene): Scene {
   const segmentRoles = getLegacyCompatibleSegmentRoles(scene as Scene & { segmentRole?: SegmentRole | null })
   const hookTypes = getLegacyCompatibleHookTypes(scene as Scene & { hookType?: string | null })
   const bRollSubtypes = getLegacyCompatibleBRollSubtypes(scene as Scene & { bRollSubtype?: BRollSubtype | null })
+  const cinematographyTags = getLegacyCompatibleCinematographyTags(
+    scene as Scene & { cinematographyTag?: CinematographyTag | null }
+  )
   const retentionEnabled =
     scene.retentionEnabled ||
     segmentRoles.includes('retention') ||
@@ -51,11 +64,17 @@ function normalizeScene(scene: Scene): Scene {
   return {
     ...scene,
     planningNotes: scene.planningNotes ?? '',
+    location: scene.location ?? '',
+    gesture: scene.gesture ?? '',
+    blocking: scene.blocking ?? '',
+    cameraMovement: scene.cameraMovement ?? '',
+    propsNotes: scene.propsNotes ?? '',
     segmentRoles: Array.from(new Set(segmentRoles.filter(role => role !== 'retention'))),
     hookTypes: segmentRoles.includes('hook') ? hookTypes : [],
     retentionEnabled,
     retentionDevices: retentionEnabled ? scene.retentionDevices : [],
     bRollSubtypes: hasBRoll ? bRollSubtypes : [],
+    cinematographyTags,
   }
 }
 
@@ -117,6 +136,11 @@ export const useSceneStore = create<SceneState>()(
           title: `씬 ${existing.length + 1}`,
           narration: '',
           planningNotes: '',
+          location: '',
+          gesture: '',
+          blocking: '',
+          cameraMovement: '',
+          propsNotes: '',
           durationManual: 0,
           isLocked: false,
           segmentRoles: [],
@@ -124,6 +148,7 @@ export const useSceneStore = create<SceneState>()(
           retentionEnabled: false,
           retentionDevices: [],
           bRollSubtypes: [],
+          cinematographyTags: [],
           onScreenTexts: [],
           references: [],
           aiVersions: [],
@@ -191,6 +216,12 @@ export const useSceneStore = create<SceneState>()(
                 retentionEnabled && (sc.retentionDevices ?? []).includes('b_roll')
                   ? (legacyBRollSubtypes.length > 0 ? legacyBRollSubtypes : legacyBRollSubtype ? [legacyBRollSubtype] : [])
                   : [],
+              cinematographyTags: (sc.cinematographyTags ?? []).filter(Boolean),
+              location: sc.location ?? '',
+              gesture: sc.gesture ?? '',
+              blocking: sc.blocking ?? '',
+              cameraMovement: sc.cameraMovement ?? '',
+              propsNotes: sc.propsNotes ?? '',
               planningNotes: sc.planningNotes ?? '',
             }
           }),
@@ -264,6 +295,11 @@ export const useSceneStore = create<SceneState>()(
             title: draft.title,
             narration: draft.narration,
             planningNotes: draft.planningNotes,
+            location: '',
+            gesture: '',
+            blocking: '',
+            cameraMovement: '',
+            propsNotes: '',
             durationManual: 0,
             isLocked: false,
             segmentRoles: [draft.segmentRole],
@@ -271,6 +307,7 @@ export const useSceneStore = create<SceneState>()(
             retentionEnabled: false,
             retentionDevices: [],
             bRollSubtypes: [],
+            cinematographyTags: [],
             onScreenTexts: [],
             references: [],
             aiVersions: [],

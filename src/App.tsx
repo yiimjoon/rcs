@@ -8,6 +8,7 @@ import { Timeline } from './features/timeline/Timeline'
 import { ProjectDrawer } from './features/sidebar/ProjectDrawer'
 import { FixedSidebar } from './features/sidebar/FixedSidebar'
 import { TeleprompterView } from './features/teleprompter/TeleprompterView'
+import { ProjectBriefPanel } from './features/toolbar/ProjectBriefPanel'
 import { Film, Plus } from './components/Icons'
 import { SCRIPT_PRESETS, normalizePresetTitle } from './lib/scriptPresets'
 import './app.css'
@@ -103,26 +104,37 @@ export default function App() {
   useEffect(() => {
     if (!projectsHydrated || !scenesHydrated) return
 
-    const importVersion = '2026-04-06-script-presets-v3'
+    const importVersion = '2026-04-07-script-presets-v4'
     if (localStorage.getItem(importVersion) === 'done') return
 
     const projectStore = useProjectStore.getState()
     const sceneStore = useSceneStore.getState()
+    const previousActiveProjectId = projectStore.activeProjectId
     const scenesByProjectId = new Map<string, number>()
+    const existingProjects = new Map(
+      projectStore.projects.map(project => [normalizePresetTitle(project.title), project])
+    )
 
     for (const scene of sceneStore.scenes) {
       scenesByProjectId.set(scene.projectId, (scenesByProjectId.get(scene.projectId) ?? 0) + 1)
     }
 
-    for (const project of projectStore.projects) {
-      const preset = SCRIPT_PRESETS.find(
-        item => normalizePresetTitle(item.projectTitle) === normalizePresetTitle(project.title)
-      )
-      if (!preset) continue
+    for (const preset of SCRIPT_PRESETS) {
+      let project = existingProjects.get(normalizePresetTitle(preset.projectTitle))
+
+      if (!project) {
+        project = projectStore.createProject(preset.projectTitle)
+        existingProjects.set(normalizePresetTitle(project.title), project)
+      }
+
       if ((scenesByProjectId.get(project.id) ?? 0) > 0) continue
 
       sceneStore.replaceScenesForProject(project.id, preset.scenes)
       scenesByProjectId.set(project.id, preset.scenes.length)
+    }
+
+    if (previousActiveProjectId) {
+      projectStore.setActiveProject(previousActiveProjectId)
     }
 
     localStorage.setItem(importVersion, 'done')
@@ -138,7 +150,7 @@ export default function App() {
   }, [activeProjectId, setTeleprompterSceneIndex])
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-export-root="true">
       <AnimatePresence>
         {mode === 'teleprompter' && activeProjectId && (
           <TeleprompterView key="teleprompter" projectId={activeProjectId} />
@@ -148,6 +160,7 @@ export default function App() {
       <ProjectDrawer />
 
       {activeProject && <Toolbar projectId={activeProject.id} />}
+      {activeProject && <ProjectBriefPanel project={activeProject} />}
 
       <div className="app-body">
         <FixedSidebar />

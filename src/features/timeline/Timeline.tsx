@@ -124,6 +124,8 @@ export function Timeline({ projectId }: Props) {
     <div
       ref={wrapRef}
       className="timeline-wrap"
+      data-export-scroll="true"
+      data-export-key={`timeline-wrap-${projectId}`}
     >
       <DndContext
         sensors={sensors}

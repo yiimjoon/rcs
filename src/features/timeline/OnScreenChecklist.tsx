@@ -46,7 +46,7 @@ export function OnScreenChecklist({ scene }: Props) {
         <input
           ref={inputRef}
           className="checklist-text"
-          placeholder="+ 항목 추가..."
+          placeholder="+ 자막/화면 문구 추가..."
           value={draft}
           style={{ color: 'var(--text-muted)', fontSize: 12 }}
           onChange={e => setDraft(e.target.value)}
