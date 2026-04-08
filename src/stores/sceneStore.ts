@@ -95,6 +95,12 @@ interface SceneState {
       narration: string
       planningNotes: string
       segmentRole: SegmentRole
+      onScreenTexts?: string[]
+      location?: string
+      gesture?: string
+      blocking?: string
+      cameraMovement?: string
+      propsNotes?: string
     }>
   ) => void
   migrateLegacyScenes: () => void
@@ -295,11 +301,11 @@ export const useSceneStore = create<SceneState>()(
             title: draft.title,
             narration: draft.narration,
             planningNotes: draft.planningNotes,
-            location: '',
-            gesture: '',
-            blocking: '',
-            cameraMovement: '',
-            propsNotes: '',
+            location: draft.location ?? '',
+            gesture: draft.gesture ?? '',
+            blocking: draft.blocking ?? '',
+            cameraMovement: draft.cameraMovement ?? '',
+            propsNotes: draft.propsNotes ?? '',
             durationManual: 0,
             isLocked: false,
             segmentRoles: [draft.segmentRole],
@@ -308,7 +314,15 @@ export const useSceneStore = create<SceneState>()(
             retentionDevices: [],
             bRollSubtypes: [],
             cinematographyTags: [],
-            onScreenTexts: [],
+            onScreenTexts: (draft.onScreenTexts ?? [])
+              .map(text => sanitizeChecklistText(text))
+              .filter(Boolean)
+              .slice(0, 50)
+              .map(text => ({
+                id: generateId(),
+                text,
+                checked: false,
+              })),
             references: [],
             aiVersions: [],
           })

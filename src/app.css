@@ -340,14 +340,34 @@ textarea:focus, input:focus {
   padding: 0 20px 16px;
   border-bottom: 1px solid var(--border);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 12px;
+}
+
+.sidebar__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar__eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 .sidebar__title {
   font-family: var(--font-display);
   font-size: 20px;
   letter-spacing: 0.04em;
+}
+
+.sidebar__subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
 .sidebar__new-btn {
@@ -401,35 +421,166 @@ textarea:focus, input:focus {
 
 .sidebar__list {
   flex: 1;
-  padding: 12px 0;
+  padding: 12px 0 20px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 18px;
+  overflow-y: auto;
 }
 
-.project-card {
+.sidebar__group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar__group-header {
   display: flex;
   align-items: center;
-  padding: 10px 20px;
-  gap: 10px;
-  cursor: pointer;
-  transition: background 0.1s;
+  justify-content: space-between;
+  width: calc(100% - 24px);
+  margin: 0 12px;
+  padding: 9px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #faf7f2, #fffdfa);
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
 }
-.project-card:hover { background: var(--bg); }
-.project-card.active { background: var(--accent-light); }
 
-.project-card__title {
-  flex: 1;
-  font-size: 14px;
-  font-weight: 500;
+.sidebar__group-header:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.sidebar__group-header.open {
+  border-color: rgba(232, 93, 44, 0.28);
+  background: linear-gradient(180deg, rgba(232, 93, 44, 0.1), rgba(255, 255, 255, 0.96));
+}
+
+.sidebar__group-header-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sidebar__group-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: transform 0.15s ease, color 0.12s ease;
+}
+
+.sidebar__group-arrow.open {
+  transform: rotate(90deg);
+  color: var(--accent);
+}
+
+.sidebar__group-name {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.sidebar__group-count {
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.sidebar__group-list {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.project-card {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 20px;
+  gap: 10px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.project-card:hover { background: var(--bg); }
+.project-card.active { background: var(--accent-light); }
+
+.project-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.project-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.project-card__title {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  min-width: 0;
+}
+
+.project-card__date {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.project-card__theme {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.project-card__footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.project-card__scene-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.project-card__scene-count svg {
+  opacity: 0.7;
+}
+
 .project-card__status {
   display: flex;
   gap: 4px;
+  margin-left: auto;
 }
 
 .status-btn {
@@ -456,6 +607,8 @@ textarea:focus, input:focus {
   justify-content: center;
   border-radius: 3px;
   font-size: 12px;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 .project-card:hover .project-card__delete { opacity: 0.5; }
 .project-card__delete:hover { opacity: 1 !important; background: rgba(220,53,69,0.1); }

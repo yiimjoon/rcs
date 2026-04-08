@@ -104,7 +104,7 @@ export default function App() {
   useEffect(() => {
     if (!projectsHydrated || !scenesHydrated) return
 
-    const importVersion = '2026-04-07-script-presets-v4'
+    const importVersion = '2026-04-07-script-presets-v6-ansher-direction'
     if (localStorage.getItem(importVersion) === 'done') return
 
     const projectStore = useProjectStore.getState()
@@ -121,13 +121,20 @@ export default function App() {
 
     for (const preset of SCRIPT_PRESETS) {
       let project = existingProjects.get(normalizePresetTitle(preset.projectTitle))
+      const shouldRefreshPreset = Boolean(preset.forceRefresh)
 
       if (!project) {
         project = projectStore.createProject(preset.projectTitle)
         existingProjects.set(normalizePresetTitle(project.title), project)
       }
 
-      if ((scenesByProjectId.get(project.id) ?? 0) > 0) continue
+      if (preset.projectTheme && (shouldRefreshPreset || !project.theme.trim())) {
+        projectStore.updateProject(project.id, { theme: preset.projectTheme })
+        project = { ...project, theme: preset.projectTheme, updatedAt: new Date().toISOString() }
+        existingProjects.set(normalizePresetTitle(project.title), project)
+      }
+
+      if ((scenesByProjectId.get(project.id) ?? 0) > 0 && !shouldRefreshPreset) continue
 
       sceneStore.replaceScenesForProject(project.id, preset.scenes)
       scenesByProjectId.set(project.id, preset.scenes.length)
